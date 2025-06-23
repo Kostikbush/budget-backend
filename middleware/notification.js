@@ -18,7 +18,7 @@ export const notificationMiddleware = async (req, res, next) => {
       // Добавляем уведомления в ответ
       const extendedData =
         typeof data === "object" && data !== null
-          ? { ...data, notifications }
+          ? { data, notifications }
           : data;
 
       return originalJson(extendedData);

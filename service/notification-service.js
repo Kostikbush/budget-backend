@@ -19,16 +19,21 @@ class NotificationService {
   }
 
   async acceptInvite(userId) {
-    const notification = await NotificationModel.findOne(
-      { recipientId: userId },
-      { type: StatusNotification.invitation}
-    );
+    const notification = await NotificationModel.findOne({
+      recipientId: userId,
+      type: StatusNotification.invitation,
+    });
 
-    if(!notification) {
-      throw new Error("Уведомление о приглашении не найдено")
+    if (!notification) {
+      throw new Error("Уведомление о приглашении не найдено");
     }
 
-    const response = await budgetService.acceptInvitation(notification.ownerId, notification.recipientId);
+    const response = await budgetService.acceptInvitation(
+      notification.ownerId,
+      notification.recipientId
+    );
+
+    await NotificationModel.deleteOne({ recipientId: userId });
 
     return response;
   }

@@ -14,6 +14,14 @@ class BudgetService {
    * @returns {Promise<Object>} - Созданный бюджет
    */
   async createBudget(name, userId, startSum, memberId) {
+    const lastBudget = await BudgetModel.findOne({
+      $or: [{ owner: userId }, { "members._id": userId }],
+    });
+    
+    if (lastBudget){
+      throw new Error("Вы уже состоите в бюджете!")
+    }
+    
     const budget = await BudgetModel.create({
       name,
       sum: startSum ?? 0,
@@ -39,6 +47,7 @@ class BudgetService {
     return {
       budget,
       message: "Приглашение отправлено пользователю",
+      type: "success",
     };
   }
   // Проверка на покрытие бюджета вперёд на 1-5 лет
@@ -95,7 +104,7 @@ class BudgetService {
       `Вас пригласили присоединиться к бюджету "${budget.name}"`
     );
 
-    return updatedBudget;
+    return { updatedBudget, type: "success" };
   }
 
   /**
@@ -126,7 +135,7 @@ class BudgetService {
 
     await user.save();
 
-    return { budget, user };
+    return { budget, user, type: "success" };
   }
 
   /**
@@ -135,14 +144,11 @@ class BudgetService {
    * @returns {Promise<Array>} - Список бюджетов
    */
   async getUserBudget(userId) {
-    // Находим бюджеты, где пользователь является создателем
     const budget = await BudgetModel.findOne({
-      $or: [{ owner: userId }, { "members.user": userId }],
-    })
-      .populate("owner")
-      .populate("members.user");
-
-    return budget;
+      $or: [{ owner: userId }, { "members._id": userId }],
+    });
+    
+    return { budget, type: "success" };
   }
 
   /**
@@ -156,7 +162,7 @@ class BudgetService {
       "owner",
       "email name"
     );
-    return invitations;
+    return { invitations, type: "success" };
   }
 
   /**
@@ -220,7 +226,7 @@ class BudgetService {
         $pull: { budgets: budgetId },
       });
 
-      return { message: "Бюджет успешно удален" };
+      return { message: "Бюджет успешно удален", type: "success" };
     }
 
     // Удаляем пользователя из списка участников
@@ -237,7 +243,7 @@ class BudgetService {
       $pull: { budgets: budgetId },
     });
 
-    return updatedBudget;
+    return { updatedBudget, type: "success" };
   }
 }
 

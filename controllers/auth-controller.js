@@ -20,11 +20,15 @@ const generateTokens = (user) => {
 
 export const register = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { email, password, name } = req.body;
     const exists = await User.findOne({ email });
-    if (exists) return res.status(400).json({ message: 'Пользователь уже существует' });
+    if (exists)
+      return res.json({
+        message: "Пользователь уже существует",
+        type: "error",
+      });
 
-    const user = await User.create({ email, password });
+    const user = await User.create({ email, password, name });
     const { accessToken, refreshToken } = generateTokens(user);
 
     await Token.create({
@@ -33,9 +37,9 @@ export const register = async (req, res) => {
       expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
     });
 
-    res.json({ accessToken, refreshToken });
+    res.json({ accessToken, refreshToken, user });
   } catch (err) {
-    res.status(500).json({ message: 'Ошибка регистрации' });
+    res.json({ message: "Ошибка регистрации", type: "error" });
   }
 };
 
@@ -44,7 +48,10 @@ export const login = async (req, res) => {
     const { email, password } = req.body;
     const user = await User.findOne({ email });
     if (!user || !(await user.comparePassword(password)))
-      return res.status(401).json({ message: 'Неверный email или пароль' });
+      return res.json({
+        message: "Неверный email или пароль",
+        type: "error",
+      });
 
     const { accessToken, refreshToken } = generateTokens(user);
 
@@ -56,7 +63,7 @@ export const login = async (req, res) => {
     console.log("user", user);
     res.json({ accessToken, refreshToken, user });
   } catch (err) {
-    res.status(500).json({ message: 'Ошибка входа' });
+    res.json({ message: "Ошибка входа", type: "error" });
   }
 };
 

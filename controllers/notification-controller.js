@@ -21,7 +21,8 @@ class NotificationController {
       res.json(response);
     } catch (error) {
       res.json({
-        message: e?.message ?? "Ошибка при попытке принять приглашение",
+        message: error?.message ?? "Ошибка при попытке принять приглашение",
+        type: "error",
       });
     }
   }
@@ -32,7 +33,7 @@ class NotificationController {
 
       await notificationService.rejectInvite(userId);
 
-      res.json("ok")
+      res.json({ type: "success" });
     }catch(error) {
       res.json({
         message: e?.message ?? "Ошибка при попытке отменить приглашение",

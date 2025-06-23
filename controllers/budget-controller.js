@@ -7,7 +7,9 @@ class BudgetController {
       const { startSum, ownerId, memberId } = req.body;
 
       if(!ownerId) {
-        throw new Error("Не передан id пользователя");
+        res.json({ message: "Не передан id пользователя", type: "error" });
+
+        return;
       }
 
       const result = await budgetService.createBudget(
@@ -19,7 +21,10 @@ class BudgetController {
 
       res.json(result);
     } catch (e) {
-      res.json({message: 'Ошибка создания бюджета'})
+      res.json({
+        message: e?.message ?? "Ошибка создания бюджета",
+        type: "error",
+      });
     }
   }
 
@@ -28,16 +33,21 @@ class BudgetController {
         const { userId } = req.query;
 
         if (!userId) {
-          throw new Error("Не передан id пользователя");
+          res.json({ message: "Не передан id пользователя", type: "error" });
+          return;
         }
 
         if (!Types.ObjectId.isValid(userId)) {
-          throw new Error("Некорректный ID пользователя");
+          res.json({ message: "Некорректный ID пользователя", type: "error" });
+          return;
         }
 
-        return await budgetService.getUserBudget(userId)
+        const budget = await budgetService.getUserBudget(userId);
+
+        res.json(budget);
       }catch(e) {
-        res.json({ message: "Ошибка получения бюджета" });
+        res.json({ message: "Ошибка получения бюджета", type: "error" });
+        return;
       }
   }
 }
