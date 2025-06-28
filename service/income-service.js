@@ -1,119 +1,63 @@
-import IncomeModel from "../models/income.js";
-import BudgetModel from "../models/budget.js";
-import AllocationModel from "../models/allocation.js";
+import { IncomeModel } from "../models/income.js";
+import { BudgetModel } from "../models/budget.js";
 import { notificationService } from "./notification-service.js";
+import { incomeHistoryService } from "./income-history-service.js";
+import { budgetServiceUtils } from "./budget-service.js";
 
 /**
  * Сервис для работы с доходами
  */
 class IncomeService {
   /**
-   * Получает все доходы для указанного бюджета
-   * @param {string} budgetId - ID бюджета
-   * @returns {Promise<Array>}
-   */
-  async getBudgetIncomes(budgetId) {
-    return await IncomeModel.find({ budgetId });
-  }
-  /**
    * Создает новый доход
    * @param {Object} incomeData - Данные о доходе
-   * @param {string} incomeData.budgetId - ID бюджета.
+   * @param {string} budgetId - ID бюджета.
    * @param {string} incomeData.title - Название дохода.
-   * @param {number} incomeData.expectedAmount - Ожидаемая сумма.
+   * @param {number} incomeData.amount - Ожидаемая сумма.
    * @param {string} [incomeData.frequency="once"] - Частота дохода.
-   * @param {boolean} [incomeData.isSpontaneous=false] - Спонтанный доход
-   * @param {Date} incomeData.nextDate - Дата следующего дохода.
-   * @param {Array} incomeData.allocations - Распределение дохода.
-   * @param {string} incomeData.allocations[].categoryId - ID категории.
-   * @param {number} incomeData.allocations[].amount - Сумма.
-   * @param {string} incomeData.allocations[].comment - Комментарий.
-   * @param {string} incomeData.allocations[].tag - Тег.
-   * @param {string} incomeData.allocations[].subcategoryId - ID подкатегории.
-   * @param {string} incomeData.allocations[].subcategoryName - Название подкатегории.
-   * @param {string} incomeData.allocations[].subcategoryType - Тип подкатегории.
-   * @param {string} incomeData.allocations[].subcategoryIcon - Иконка подкатегории.
-   * @param {string} incomeData.allocations[].subcategoryColor - Цвет подкатегории.
+   * @param {string} incomeData.date - Дата зачисления.
    * @param {string} userId - ID пользователя
    * @returns {Promise<Object>} - Созданный доход
    */
-  async createIncome(incomeData, userId) {
-    const {
-      budgetId,
-      title,
-      expectedAmount,
-      frequency = "once",
-      isSpontaneous = false,
-      nextDate,
-      allocations,
-    } = incomeData;
+  async createIncome(incomeData, budgetId, userId) {
+    const { title, amount, frequency = "once", date } = incomeData;
 
     // Проверяем, существует ли бюджет и является ли пользователь его участником
     const budget = await BudgetModel.findById(budgetId);
-    if (!budget) {
-      throw new Error("Бюджет не найден");
+
+    budgetServiceUtils.isUserBudget(budget, userId);
+
+    if (frequency === "once") {
+      budget.sum += amount;
+
+      await incomeHistoryService.createIncome(
+        {
+          title,
+          amount,
+          frequency,
+        },
+        budgetId,
+        userId
+      );
+
+      await budget.save();
+
+      return { type: "success" };
     }
 
-    if (!budget.participants.includes(userId)) {
-      throw new Error("У вас нет доступа к этому бюджету");
-    }
-
-    // Проверяем, что все доходы распределены
-    let totalAllocated = 0;
-    if (allocations) {
-      allocations.forEach((allocation) => {
-        totalAllocated += allocation.amount;
-      });
-    }
-
-    if (totalAllocated !== expectedAmount) {
-      throw new Error("Весь доход должен быть распределен на расходы или цели");
-    }
-
-    // Создаем новый доход
-    const income = await IncomeModel.create({
+    await IncomeModel.create({
       budgetId,
       userId,
       title,
-      expectedAmount,
+      amount,
       frequency,
-      isSpontaneous,
-      nextDate,
-      allocations: [],
+      date: new Date(date),
+      createdAt: new Date(),
     });
 
-    // Создаем распределения для дохода
-    if (allocations && allocations.length > 0) {
-      const allocationDocs = await Promise.all(
-        allocations.map((allocation) =>
-          AllocationModel.create({
-            incomeId: income._id,
-            type: allocation.type,
-            targetId: allocation.targetId,
-            amount: allocation.amount,
-          })
-        )
-      );
+    const incomes = await IncomeModel.find({ budgetId });
 
-      // Добавляем ссылки на распределения в доход
-      await IncomeModel.findByIdAndUpdate(
-        income._id,
-        {
-          $push: {
-            allocations: { $each: allocationDocs.map((doc) => doc._id) },
-          },
-        },
-        { new: true }
-      );
-    }
-
-    // Получаем обновленный доход с распределениями
-    const updatedIncome = await IncomeModel.findById(income._id).populate({
-      path: "allocations",
-      model: "Allocation",
-    });
-
-    return updatedIncome;
+    return { incomes, type: "success" };
   }
 
   /**
@@ -123,25 +67,15 @@ class IncomeService {
    * @returns {Promise<Array>} - Список доходов
    */
   async getBudgetIncomes(budgetId, userId) {
-    // Проверяем, имеет ли пользователь доступ к бюджету
     const budget = await BudgetModel.findById(budgetId);
-    if (!budget) {
-      throw new Error("Бюджет не найден");
-    }
 
-    if (!budget.participants.includes(userId)) {
-      throw new Error("У вас нет доступа к этому бюджету");
-    }
+    budgetServiceUtils.isUserBudget(budget, userId);
 
-    // Получаем доходы для бюджета
-    const incomes = await IncomeModel.find({ budgetId })
-      .populate({
-        path: "allocations",
-        model: "Allocation",
-      })
-      .sort({ nextDate: 1 });
+    const incomes = await IncomeModel.find({ budgetId }).sort({
+      createdAt: 1,
+    });
 
-    return incomes;
+    return { incomes, type: "success" };
   }
 
   /**

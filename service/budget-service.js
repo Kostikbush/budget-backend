@@ -1,4 +1,6 @@
 import { BudgetModel } from "../models/budget.js";
+import { ExpenseHistoryModel } from "../models/expenseHistory.js";
+import { IncomeHistoryModel } from "../models/incomeHistory.js";
 import { StatusNotification } from "../models/notification.js";
 import UserModel from "../models/user.js";
 import { notificationService } from "./notification-service.js";
@@ -17,11 +19,11 @@ class BudgetService {
     const lastBudget = await BudgetModel.findOne({
       $or: [{ owner: userId }, { "members._id": userId }],
     });
-    
-    if (lastBudget){
-      throw new Error("Вы уже состоите в бюджете!")
+
+    if (lastBudget) {
+      throw new Error("Вы уже состоите в бюджете!");
     }
-    
+
     const budget = await BudgetModel.create({
       name,
       sum: startSum ?? 0,
@@ -147,7 +149,7 @@ class BudgetService {
     const budget = await BudgetModel.findOne({
       $or: [{ owner: userId }, { "members._id": userId }],
     });
-    
+
     return { budget, type: "success" };
   }
 
@@ -245,6 +247,58 @@ class BudgetService {
 
     return { updatedBudget, type: "success" };
   }
+
+  async history({ budgetId, after, limit = 20, type = "all" }) {
+    try {
+      const dateFilter = after ? { date: { $lt: new Date(after) } } : {};
+      const calcLimit = type === "all" ? limit / 2 : limit;
+
+      const [incomes, expenses] = await Promise.all([
+        type === "all" || type === "income"
+          ? IncomeHistoryModel.find({ budgetId, ...dateFilter })
+              .sort({ date: -1 })
+              .limit(calcLimit)
+          : Promise.resolve([]),
+        type === "all" || type === "expense"
+          ? ExpenseHistoryModel.find({ budgetId, ...dateFilter })
+              .sort({ date: -1 })
+              .limit(calcLimit)
+          : Promise.resolve([]),
+      ]);
+
+      const combined = [...incomes, ...expenses].sort(
+        (a, b) => b.date.getTime() - a.date.getTime()
+      );
+
+      return {
+        items: combined,
+        hasMore: combined.length === limit,
+        nextCursor: combined.at(-1)?.date ?? null,
+        type: "success",
+      };
+    } catch (error) {
+      return error;
+    }
+  }
+}
+
+class BudgetServiceUtils {
+  isUserBudget(budget, userId) {
+    if (!budget) {
+      throw new Error("Бюджет не найден");
+    }
+
+    const itHeBudget =
+      budget.owner.toString() === userId ||
+      !!budget.members.find((member) => member._id.toString() === userId);
+
+    if (!itHeBudget) {
+      throw new Error("У вас нет доступа к этому бюджету");
+    }
+
+    return true;
+  }
 }
 
 export const budgetService = new BudgetService();
+export const budgetServiceUtils = new BudgetServiceUtils();

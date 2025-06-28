@@ -3,6 +3,7 @@ import { Router } from "express";
 import userController from "../controllers/user-controller.js";
 import budgetController from "../controllers/budget-controller.js";
 import notificationController from "../controllers/notification-controller.js";
+import incomeController from "../controllers/income-controller.js";
 import {
   login,
   logout,
@@ -22,6 +23,10 @@ router.post("/createBudget", budgetController.create);
 router.get("/notifications", notificationController.getNotifications);
 router.put("/acceptInvite", notificationController.acceptInvite);
 router.put("/rejectInvite", notificationController.rejectInvite);
+router.get("/history", budgetController.history);
+router.get("/incomes", incomeController.getBudgetIncomes);
+router.post("/createIncome", incomeController.createIncome);
+router.put("/income", incomeController.updateIncome);
 
 // /budgets
 // Метод	Путь	Описание

@@ -1,22 +1,22 @@
 import mongoose from "mongoose";
 
 const incomeSchema = new mongoose.Schema({
-  budgetId: { type: mongoose.Schema.Types.ObjectId, ref: "Budget" },
-  userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
-  title: String,
-  expectedAmount: Number,
-  actualAmount: Number,
-  confirmed: { type: Boolean, default: false },
-  comment: String,
+  budgetId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Budget",
+    required: true,
+  },
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+  title: { type: String, required: true },
+  amount: { type: Number, required: true },
   frequency: {
     type: String,
     enum: ["once", "daily", "weekly", "monthly", "yearly"],
     default: "once",
+    required: true,
   },
-  isSpontaneous: Boolean,
-  nextDate: Date,
-  allocations: [{ type: mongoose.Schema.Types.ObjectId, ref: "Allocation" }],
-  createdAt: { type: Date, default: Date.now },
+  date: { type: Date, required: true },
+  createdAt: { type: Date, default: Date.now, required: true },
 });
 
-module.exports = mongoose.model("Income", incomeSchema);
+export const IncomeModel = mongoose.model("Income", incomeSchema);

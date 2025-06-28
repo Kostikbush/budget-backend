@@ -6,7 +6,7 @@ class BudgetController {
     try {
       const { startSum, ownerId, memberId } = req.body;
 
-      if(!ownerId) {
+      if (!ownerId) {
         res.json({ message: "Не передан id пользователя", type: "error" });
 
         return;
@@ -16,7 +16,7 @@ class BudgetController {
         "Бюджет",
         ownerId,
         startSum,
-        memberId,
+        memberId
       );
 
       res.json(result);
@@ -28,27 +28,51 @@ class BudgetController {
     }
   }
 
+  async history(req, res) {
+    try {
+      const { budgetId, after, limit, type } = req.query;
+
+      if (!budgetId) {
+        return res.json({ message: "Не передан бюджет", type: "error" });
+      }
+
+      const result = await budgetService.history({
+        budgetId: budgetId,
+        after: after ? new Date(after) : undefined,
+        limit: Number(limit) || 20,
+        type: type || "all",
+      });
+
+      return res.json(result);
+    } catch (error) {
+      return res.json({
+        message: error?.message ?? "Ошибка получения истории",
+        type: "error",
+      });
+    }
+  }
+
   async getBudget(req, res) {
-      try{
-        const { userId } = req.query;
+    try {
+      const { userId } = req.query;
 
-        if (!userId) {
-          res.json({ message: "Не передан id пользователя", type: "error" });
-          return;
-        }
-
-        if (!Types.ObjectId.isValid(userId)) {
-          res.json({ message: "Некорректный ID пользователя", type: "error" });
-          return;
-        }
-
-        const budget = await budgetService.getUserBudget(userId);
-
-        res.json(budget);
-      }catch(e) {
-        res.json({ message: "Ошибка получения бюджета", type: "error" });
+      if (!userId) {
+        res.json({ message: "Не передан id пользователя", type: "error" });
         return;
       }
+
+      if (!Types.ObjectId.isValid(userId)) {
+        res.json({ message: "Некорректный ID пользователя", type: "error" });
+        return;
+      }
+
+      const budget = await budgetService.getUserBudget(userId);
+
+      res.json(budget);
+    } catch (e) {
+      res.json({ message: "Ошибка получения бюджета", type: "error" });
+      return;
+    }
   }
 }
 
