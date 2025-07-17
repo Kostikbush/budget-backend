@@ -1,8 +1,8 @@
 import { IncomeModel } from "../models/income.js";
 import { BudgetModel } from "../models/budget.js";
-import { notificationService } from "./notification-service.js";
 import { incomeHistoryService } from "./income-history-service.js";
-import { budgetServiceUtils } from "./budget-service.js";
+import { budgetService, budgetServiceUtils } from "./budget-service.js";
+import { ExpenseModel } from "../models/expense.js";
 
 /**
  * Сервис для работы с доходами
@@ -11,7 +11,6 @@ class IncomeService {
   /**
    * Создает новый доход
    * @param {Object} incomeData - Данные о доходе
-   * @param {string} budgetId - ID бюджета.
    * @param {string} incomeData.title - Название дохода.
    * @param {number} incomeData.amount - Ожидаемая сумма.
    * @param {string} [incomeData.frequency="once"] - Частота дохода.
@@ -19,28 +18,22 @@ class IncomeService {
    * @param {string} userId - ID пользователя
    * @returns {Promise<Object>} - Созданный доход
    */
-  async createIncome(incomeData, budgetId, userId) {
+  async createIncome(incomeData, userId) {
     const { title, amount, frequency = "once", date } = incomeData;
 
-    // Проверяем, существует ли бюджет и является ли пользователь его участником
-    const budget = await BudgetModel.findById(budgetId);
+    const budget = (await budgetService.getUserBudget(userId)).budget;
 
-    budgetServiceUtils.isUserBudget(budget, userId);
+    const budgetId = budget._id.toString();
 
     if (frequency === "once") {
-      budget.sum += amount;
-
-      await incomeHistoryService.createIncome(
+      await incomeHistoryService.create(
         {
           title,
           amount,
           frequency,
         },
-        budgetId,
-        userId
+        userId,
       );
-
-      await budget.save();
 
       return { type: "success" };
     }
@@ -52,6 +45,7 @@ class IncomeService {
       amount,
       frequency,
       date: new Date(date),
+      nextDate: budgetServiceUtils.getNextDateFromFrequency(date, frequency),
       createdAt: new Date(),
     });
 
@@ -60,18 +54,52 @@ class IncomeService {
     return { incomes, type: "success" };
   }
 
+  async deleteRegularIncome(incomeId) {
+    const income = await IncomeModel.findById(incomeId);
+
+    if (!income) {
+      throw new Error("Доход не найден");
+    }
+
+    const budgetId = income.budgetId.toString();
+
+    const [budget, incomes, expenses] = await Promise.all([
+      BudgetModel.findById(budgetId),
+      IncomeModel.find({ budgetId }),
+      ExpenseModel.find({ budgetId }),
+    ]);
+
+    if (!budget) throw new Error("Бюджет не найден");
+
+    const newIncomes = incomes.filter(
+      (income) => income._id.toString() !== incomeId,
+    );
+
+    if (
+      !budgetServiceUtils.simulateBudgetHealth(budget, newIncomes, expenses)
+    ) {
+      throw new Error(
+        "Удаляя доход бюджет уйдет в минус через некоторое время!",
+      );
+    }
+
+    await IncomeModel.deleteOne({ _id: incomeId });
+
+    return { type: "success" };
+  }
+
   /**
    * Возвращает список доходов для бюджета
    * @param {string} budgetId - ID бюджета
    * @param {string} userId - ID пользователя
-   * @returns {Promise<Array>} - Список доходов
+   * @returns {Promise<{type: string; incomes: Array}>} - Список доходов
    */
-  async getBudgetIncomes(budgetId, userId) {
-    const budget = await BudgetModel.findById(budgetId);
+  async getBudgetIncomes(userId) {
+    const budget = await budgetService.getUserBudget(userId);
 
-    budgetServiceUtils.isUserBudget(budget, userId);
-
-    const incomes = await IncomeModel.find({ budgetId }).sort({
+    const incomes = await IncomeModel.find({
+      budgetId: budget.budget._id.toString(),
+    }).sort({
       createdAt: 1,
     });
 
@@ -82,152 +110,75 @@ class IncomeService {
    * Обновляет доход
    * @param {string} incomeId - ID дохода
    * @param {Object} incomeData - Данные для обновления
-   * @param {string} userId - ID пользователя
    * @returns {Promise<Object>} - Обновленный доход
    */
-  async updateIncome(incomeId, incomeData, userId) {
-    const {
-      title,
-      expectedAmount,
-      frequency,
-      isSpontaneous,
-      nextDate,
-      allocations,
-    } = incomeData;
+  async updateIncome(incomeId, incomeData) {
+    const { title, amount, frequency, date } = incomeData;
 
     // Находим доход
     const income = await IncomeModel.findById(incomeId);
+    const budgetId = income.budgetId._id.toString();
     if (!income) {
       throw new Error("Доход не найден");
     }
 
-    // Проверяем, имеет ли пользователь доступ к бюджету
-    const budget = await BudgetModel.findById(income.budgetId);
-    if (!budget.participants.includes(userId)) {
-      throw new Error("У вас нет доступа к этому бюджету");
-    }
-
-    // Проверяем, не подтвержден ли уже доход
-    if (income.confirmed) {
-      throw new Error("Невозможно изменить подтвержденный доход");
-    }
-
-    // Проверяем, что все доходы распределены
-    if (allocations) {
-      let totalAllocated = 0;
-      allocations.forEach((allocation) => {
-        totalAllocated += allocation.amount;
-      });
-
-      if (totalAllocated !== (expectedAmount || income.expectedAmount)) {
-        throw new Error(
-          "Весь доход должен быть распределен на расходы или цели"
-        );
-      }
-
-      // Удаляем старые распределения
-      await AllocationModel.deleteMany({ incomeId });
-
-      // Создаем новые распределения
-      const allocationDocs = await Promise.all(
-        allocations.map((allocation) =>
-          AllocationModel.create({
-            incomeId,
-            type: allocation.type,
-            targetId: allocation.targetId,
-            amount: allocation.amount,
-          })
-        )
+    if (frequency === "once") {
+      await this.deleteRegularIncome(income._id.toString());
+      await incomeHistoryService.create(
+        {
+          title,
+          frequency,
+          amount,
+        },
+        budgetId,
+        income.userId.toString(),
       );
 
-      // Обновляем ссылки на распределения в доходе
-      await IncomeModel.findByIdAndUpdate(incomeId, {
-        allocations: allocationDocs.map((doc) => doc._id),
-      });
+      return {
+        type: "success",
+      };
+    }
+
+    const [budget, incomes, expenses] = await Promise.all([
+      BudgetModel.findById(budgetId),
+      IncomeModel.find({ budgetId }),
+      ExpenseModel.find({ budgetId }),
+    ]);
+
+    if (
+      !budgetServiceUtils.simulateBudgetHealth(
+        budget,
+        incomes.map((inc) => {
+          if (inc._id.toString() === incomeId) {
+            return {
+              ...inc,
+              ...incomeData,
+            };
+          }
+
+          return inc;
+        }),
+        expenses,
+      )
+    ) {
+      throw new Error(
+        "Изменяя доход бюджет уйдет в минус через некоторое время!",
+      );
     }
 
     // Обновляем доход
     const updatedIncome = await IncomeModel.findByIdAndUpdate(
       incomeId,
       {
-        title: title || income.title,
-        expectedAmount: expectedAmount || income.expectedAmount,
-        frequency: frequency || income.frequency,
-        isSpontaneous:
-          isSpontaneous !== undefined ? isSpontaneous : income.isSpontaneous,
-        nextDate: nextDate || income.nextDate,
+        title: title,
+        amount: amount,
+        frequency: frequency,
+        date: date,
       },
-      { new: true }
-    ).populate({
-      path: "allocations",
-      model: "Allocation",
-    });
+      { new: true },
+    );
 
-    return updatedIncome;
-  }
-
-  /**
-   * Удаляет доход
-   * @param {string} incomeId - ID дохода
-   * @param {string} userId - ID пользователя
-   * @returns {Promise<Object>} - Результат операции
-   */
-  async deleteIncome(incomeId, userId) {
-    // Находим доход
-    const income = await IncomeModel.findById(incomeId);
-    if (!income) {
-      throw new Error("Доход не найден");
-    }
-
-    // Проверяем, имеет ли пользователь доступ к бюджету
-    const budget = await BudgetModel.findById(income.budgetId);
-    if (!budget.participants.includes(userId)) {
-      throw new Error("У вас нет доступа к этому бюджету");
-    }
-
-    // Проверяем, не подтвержден ли уже доход
-    if (income.confirmed) {
-      throw new Error("Невозможно удалить подтвержденный доход");
-    }
-
-    // Удаляем распределения
-    await AllocationModel.deleteMany({ incomeId });
-
-    // Удаляем доход
-    await IncomeModel.findByIdAndDelete(incomeId);
-
-    return { message: "Доход успешно удален" };
-  }
-
-  /**
-   * Рассчитывает следующую дату для повторяющегося дохода
-   * @param {Date} currentDate - Текущая дата
-   * @param {string} frequency - Частота повторения
-   * @returns {Date} - Следующая дата
-   * @private
-   */
-  _calculateNextDate(currentDate, frequency) {
-    const date = new Date(currentDate);
-
-    switch (frequency) {
-      case "daily":
-        date.setDate(date.getDate() + 1);
-        break;
-      case "weekly":
-        date.setDate(date.getDate() + 7);
-        break;
-      case "monthly":
-        date.setMonth(date.getMonth() + 1);
-        break;
-      case "yearly":
-        date.setFullYear(date.getFullYear() + 1);
-        break;
-      default:
-        // Для разового дохода не меняем дату
-        break;
-    }
-
-    return date;
+    return { updatedIncome, type: "success" };
   }
 }
 

@@ -3,20 +3,19 @@ import mongoose from "mongoose";
 const expenseSchema = new mongoose.Schema({
   budgetId: { type: mongoose.Schema.Types.ObjectId, ref: "Budget" },
   userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
-  title: { type: String },
+  title: { type: String, required: true },
   amount: { type: Number },
   confirmed: { type: Boolean, default: false },
   comment: { type: String },
-  priority: { type: Number, min: 1, max: 3, default: 3 },
-  category: { type: String, enum: ["base", "optional"] },
+  priority: { type: Number, min: 1, max: 3, default: 1 },
   frequency: {
     type: String,
     enum: ["once", "daily", "weekly", "monthly", "yearly"],
     default: "daily",
   },
   scope: { type: String, enum: ["personal", "shared"], default: "personal" },
-  startDate: Date,
-  nextDate: Date,
+  date: { type: Date },
+  nextDate: { type: Date },
   createdAt: { type: Date, default: Date.now },
 });
 

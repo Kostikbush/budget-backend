@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 
-export const StatusNotification = {
+export const TypeNotification = {
   newExpense: "newExpense",
   invitation: "invitation",
 };
@@ -18,12 +18,13 @@ const notificationSchema = new mongoose.Schema({
   },
   type: {
     type: String,
-    enum: [StatusNotification.invitation, StatusNotification.newExpense],
+    enum: [TypeNotification.invitation, TypeNotification.newExpense],
     required: true,
   },
   message: { type: String, required: true },
   isRead: { type: Boolean, default: false },
   createdAt: { type: Date, default: Date.now, required: true },
+  entityId: { type: mongoose.Schema.Types.ObjectId },
 });
 
 export default mongoose.model("Notification", notificationSchema);

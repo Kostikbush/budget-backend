@@ -4,7 +4,7 @@ const incomeHistorySchema = new mongoose.Schema({
   incomeId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Income",
-    default: null
+    default: null,
   },
   userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null },
   budgetId: {
@@ -23,4 +23,7 @@ const incomeHistorySchema = new mongoose.Schema({
   title: { type: String, required: true },
 });
 
-export const IncomeHistoryModel = mongoose.model("IncomeHistory", incomeHistorySchema);
+export const IncomeHistoryModel = mongoose.model(
+  "IncomeHistory",
+  incomeHistorySchema,
+);

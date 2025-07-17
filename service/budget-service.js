@@ -1,9 +1,31 @@
 import { BudgetModel } from "../models/budget.js";
 import { ExpenseHistoryModel } from "../models/expenseHistory.js";
 import { IncomeHistoryModel } from "../models/incomeHistory.js";
-import { StatusNotification } from "../models/notification.js";
+import { IncomeModel } from "../models/income.js";
+import { TypeNotification } from "../models/notification.js";
 import UserModel from "../models/user.js";
 import { notificationService } from "./notification-service.js";
+import { ExpenseModel } from "../models/expense.js";
+import { Types } from "mongoose";
+import {
+  addDays,
+  addWeeks,
+  addMonths,
+  addYears,
+  isValid,
+  parseISO,
+} from "date-fns";
+
+/**
+ * @typedef {Object} Budget
+ * @property {Types.ObjectId} _id - Уникальный идентификатор бюджета
+ * @property {string} name - Название бюджета
+ * @property {number} sum - Текущая сумма бюджета
+ * @property {Types.ObjectId} owner - ID пользователя-владельца
+ * @property {Array<{ user: Types.ObjectId }>} members - Участники бюджета
+ * @property {Date} createdAt - Дата создания
+ * @property {Date} updatedAt - Дата последнего обновления
+ */
 
 /**
  * Сервис для работы с бюджетами
@@ -41,8 +63,8 @@ class BudgetService {
       await notificationService.create(
         userId,
         memberId,
-        StatusNotification.invitation,
-        "Вас приглашают в бюджет"
+        TypeNotification.invitation,
+        "Вас приглашают в бюджет",
       );
     }
 
@@ -95,7 +117,7 @@ class BudgetService {
     const updatedBudget = await BudgetModel.findByIdAndUpdate(
       budgetId,
       { $push: { invited: invitee._id } },
-      { new: true }
+      { new: true },
     );
 
     // Создаем уведомление о приглашении
@@ -103,7 +125,7 @@ class BudgetService {
       invitee._id,
       "invitation",
       budgetId,
-      `Вас пригласили присоединиться к бюджету "${budget.name}"`
+      `Вас пригласили присоединиться к бюджету "${budget.name}"`,
     );
 
     return { updatedBudget, type: "success" };
@@ -141,15 +163,19 @@ class BudgetService {
   }
 
   /**
-   * Получает список бюджетов пользователя
+   * Получает бюджет пользователя
    * @param {string} userId - ID пользователя
-   * @returns {Promise<Array>} - Список бюджетов
+   * @returns {Promise<{budget: Budget, type: string}>} - бюджет
    */
   async getUserBudget(userId) {
     const budget = await BudgetModel.findOne({
       $or: [{ owner: userId }, { "members._id": userId }],
     });
 
+    if (!budget) {
+      throw new Error("Бюджет не найден");
+    }
+    budget._id;
     return { budget, type: "success" };
   }
 
@@ -162,7 +188,7 @@ class BudgetService {
     // Находим бюджеты, куда пользователь приглашен
     const invitations = await BudgetModel.find({ invited: userId }).populate(
       "owner",
-      "email name"
+      "email name",
     );
     return { invitations, type: "success" };
   }
@@ -237,7 +263,7 @@ class BudgetService {
       {
         $pull: { participants: userId },
       },
-      { new: true }
+      { new: true },
     );
 
     // Удаляем бюджет из списка бюджетов пользователя
@@ -267,7 +293,7 @@ class BudgetService {
       ]);
 
       const combined = [...incomes, ...expenses].sort(
-        (a, b) => b.date.getTime() - a.date.getTime()
+        (a, b) => b.date.getTime() - a.date.getTime(),
       );
 
       return {
@@ -282,6 +308,19 @@ class BudgetService {
   }
 }
 
+const frequencyToMonthStep = {
+  daily: 1, // ≈ каждый месяц (условно 30 раз)
+  weekly: 1, // ≈ 4 раза в месяц
+  monthly: 1,
+  yearly: 12,
+};
+
+const frequencyToMultiplier = {
+  daily: 30,
+  weekly: 4,
+  monthly: 1,
+  yearly: 1 / 12,
+};
 class BudgetServiceUtils {
   isUserBudget(budget, userId) {
     if (!budget) {
@@ -297,6 +336,69 @@ class BudgetServiceUtils {
     }
 
     return true;
+  }
+
+  simulateBudgetHealth(budget, incomes, expenses, years = 5) {
+    const totalMonths = years * 12;
+    const monthlyHistory = new Array(totalMonths).fill(0);
+
+    // Распределяем доходы
+    for (const income of incomes) {
+      const step = frequencyToMonthStep[income.frequency];
+      const multiplier = frequencyToMultiplier[income.frequency];
+
+      for (let m = 0; m < totalMonths; m += step) {
+        monthlyHistory[m] += Math.round(income.amount * multiplier);
+      }
+    }
+
+    // Распределяем расходы
+    for (const expense of expenses) {
+      const step = frequencyToMonthStep[expense.frequency];
+      const multiplier = frequencyToMultiplier[expense.frequency];
+
+      for (let m = 0; m < totalMonths; m += step) {
+        monthlyHistory[m] -= Math.round(expense.amount * multiplier);
+      }
+    }
+
+    // Прогноз по месячным изменениям
+    let runningTotal = budget.sum;
+
+    for (let m = 0; m < totalMonths; m++) {
+      runningTotal += monthlyHistory[m];
+      if (runningTotal <= 0) return false;
+    }
+
+    return true;
+  }
+
+  /**
+   * Возвращает следующую дату на основе частоты.
+   *
+   * @param {Date | string} startDate - Начальная дата (объект Date или строка ISO)
+   * @param {"once" | "daily" | "weekly" | "monthly" | "yearly"} frequency - Частота
+   * @returns {Date | null} - Следующая дата или null, если once или невалидная дата
+   */
+  getNextDateFromFrequency(startDate, frequency) {
+    const date =
+      typeof startDate === "string" ? parseISO(startDate) : startDate;
+
+    if (!isValid(date)) return null;
+
+    switch (frequency) {
+      case "daily":
+        return addDays(date, 1);
+      case "weekly":
+        return addWeeks(date, 1);
+      case "monthly":
+        return addMonths(date, 1);
+      case "yearly":
+        return addYears(date, 1);
+      case "once":
+      default:
+        return null;
+    }
   }
 }
 

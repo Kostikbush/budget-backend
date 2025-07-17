@@ -1,6 +1,5 @@
 import { IncomeHistoryModel } from "../models/incomeHistory.js";
-import {BudgetModel} from '../models/budget.js'
-import { budgetServiceUtils } from "./budget-service.js";
+import { budgetService } from "./budget-service.js";
 
 class IncomeHistoryService {
   /**
@@ -14,24 +13,25 @@ class IncomeHistoryService {
    * @returns {Promise<Object>} - Созданный доход
    */
 
-  // нужно добавлять нетолько 
-  async createIncome(incomeData, budgetId, userId) {
-        // Проверяем, существует ли бюджет и является ли пользователь его участником
-        const budget = await BudgetModel.findById(budgetId);
+  async create(incomeData, userId) {
+    const budget = (await budgetService.getUserBudget(userId)).budget;
 
-        budgetServiceUtils.isUserBudget(budget, userId);
+    budget.sum += incomeData.amount;
 
-        await IncomeHistoryModel.create({
-          amount: incomeData.amount,
-          budgetId: budgetId,
-          date: new Date(),
-          userId: userId,
-          incomeId: incomeData?.incomeId ?? null,
-          frequency: incomeData.frequency,
-          title: incomeData.title,
-        });
+    await IncomeHistoryModel.create({
+      amount: incomeData.amount,
+      budgetId: budget._id.toString(),
+      date: new Date(),
+      userId: userId,
+      incomeId: incomeData?.incomeId ?? null,
+      frequency: incomeData.frequency,
+      title: incomeData.title,
+    });
+
+    await budget.save();
+
+    return { type: "success" };
   }
-
 }
 
 export const incomeHistoryService = new IncomeHistoryService();

@@ -3,18 +3,18 @@ import { incomeService } from "../service/income-service.js";
 class IncomeController {
   async getBudgetIncomes(req, res) {
     try {
-      const { userId, budgetId } = req.query;
+      const { userId } = req.query;
 
-      if (!userId || !budgetId) {
-        res.json({
-          message: "Не передана информация о пользователе и бюджете",
+      if (!userId) {
+        return res.json({
+          message: "Не передана информация о пользователе",
           type: "error",
         });
       }
 
-      const users = await incomeService.getBudgetIncomes(budgetId, userId);
+      const incomes = await incomeService.getBudgetIncomes(userId);
 
-      return res.json(users);
+      return res.json(incomes);
     } catch (e) {
       res.json({
         message: e?.message ?? "Ошибка получения списка доходов",
@@ -25,20 +25,16 @@ class IncomeController {
 
   async createIncome(req, res) {
     try {
-      const { userId, budgetId, incomeData } = req.body;
+      const { userId, incomeData } = req.body;
 
-      if (!userId || !budgetId) {
-        res.json({
+      if (!userId) {
+        return res.json({
           message: "Не передана информация о пользователе и бюджете",
           type: "error",
         });
       }
 
-      const response = await incomeService.createIncome(
-        incomeData,
-        budgetId,
-        userId
-      );
+      const response = await incomeService.createIncome(incomeData, userId);
 
       return res.json(response);
     } catch (error) {
@@ -50,17 +46,46 @@ class IncomeController {
   }
 
   async updateIncome(req, res) {
-    try{
-      const { incomeId } = req;
+    try {
+      const { incomeId, incomeData, budgetId } = req.body;
 
-      if(!incomeId) {
-        res.json({
+      if (!incomeId) {
+        return res.json({
           message: "Не передан id дохода",
           type: "error",
         });
       }
-      
-    }catch(error) {
+
+      const updateIncome = await incomeService.updateIncome(
+        incomeId,
+        incomeData,
+        budgetId,
+      );
+
+      return res.json(updateIncome);
+    } catch (error) {
+      res.json({
+        message: error?.message ?? "Ошибка обновления дохода",
+        type: "error",
+      });
+    }
+  }
+
+  async deleteIncome(req, res) {
+    try {
+      const { incomeId } = req.body;
+
+      if (!incomeId) {
+        return res.json({
+          message: "Не передан id дохода",
+          type: "error",
+        });
+      }
+
+      const updateIncome = await incomeService.deleteRegularIncome(incomeId);
+
+      return res.json(updateIncome);
+    } catch (error) {
       res.json({
         message: error?.message ?? "Ошибка обновления дохода",
         type: "error",

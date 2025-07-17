@@ -1,18 +1,18 @@
-import  jwt from 'jsonwebtoken';
-import  User from '../models/user.js';
+import jwt from "jsonwebtoken";
+import User from "../models/user.js";
 import Token from "../models/token.js";
 
 const generateTokens = (user) => {
   const accessToken = jwt.sign(
     { id: user._id, email: user.email },
     process.env.JWT_ACCESS_SECRET,
-    { expiresIn: process.env.ACCESS_TOKEN_EXPIRY }
+    { expiresIn: process.env.ACCESS_TOKEN_EXPIRY },
   );
 
   const refreshToken = jwt.sign(
     { id: user._id },
     process.env.JWT_REFRESH_SECRET,
-    { expiresIn: process.env.REFRESH_TOKEN_EXPIRY }
+    { expiresIn: process.env.REFRESH_TOKEN_EXPIRY },
   );
 
   return { accessToken, refreshToken };
@@ -70,14 +70,18 @@ export const login = async (req, res) => {
 export const refresh = async (req, res) => {
   try {
     const { token } = req.body;
-    if (!token) return res.status(401).json({ message: 'Нет токена' });
+    if (!token) return res.status(401).json({ message: "Нет токена" });
 
     const savedToken = await Token.findOne({ token });
-    if (!savedToken) return res.status(403).json({ message: 'Недействительный refresh токен' });
+    if (!savedToken)
+      return res
+        .status(403)
+        .json({ message: "Недействительный refresh токен" });
 
     const payload = jwt.verify(token, process.env.JWT_REFRESH_SECRET);
     const user = await User.findById(payload.id);
-    if (!user) return res.status(401).json({ message: 'Пользователь не найден' });
+    if (!user)
+      return res.status(401).json({ message: "Пользователь не найден" });
 
     const { accessToken, refreshToken } = generateTokens(user);
 
@@ -90,12 +94,12 @@ export const refresh = async (req, res) => {
 
     res.json({ accessToken, refreshToken });
   } catch (err) {
-    res.status(403).json({ message: 'Невалидный refresh токен' });
+    res.status(403).json({ message: "Невалидный refresh токен" });
   }
 };
 
 export const logout = async (req, res) => {
   const { token } = req.body;
   await Token.deleteOne({ token });
-  res.json({ message: 'Выход выполнен' });
+  res.json({ message: "Выход выполнен" });
 };

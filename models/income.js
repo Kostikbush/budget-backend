@@ -16,6 +16,7 @@ const incomeSchema = new mongoose.Schema({
     required: true,
   },
   date: { type: Date, required: true },
+  nextDate: { type: Date, required: true },
   createdAt: { type: Date, default: Date.now, required: true },
 });
 

@@ -4,6 +4,7 @@ import userController from "../controllers/user-controller.js";
 import budgetController from "../controllers/budget-controller.js";
 import notificationController from "../controllers/notification-controller.js";
 import incomeController from "../controllers/income-controller.js";
+import expenseController from "../controllers/expense-controller.js";
 import {
   login,
   logout,
@@ -27,6 +28,13 @@ router.get("/history", budgetController.history);
 router.get("/incomes", incomeController.getBudgetIncomes);
 router.post("/createIncome", incomeController.createIncome);
 router.put("/income", incomeController.updateIncome);
+router.delete("/deleteIncome", incomeController.deleteIncome);
+router.get("/expenses", expenseController.getBudgetExpenses);
+router.post("/createExpense", expenseController.createExpense);
+router.put("/updateExpense", expenseController.updateExpense);
+router.delete("/deleteExpense", expenseController.deleteExpense);
+router.get("/acceptExpense", expenseController.acceptExpense);
+router.get("/rejectExpense", expenseController.rejectExpense);
 
 // /budgets
 // Метод	Путь	Описание

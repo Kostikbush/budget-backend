@@ -1,4 +1,4 @@
-import { budgetService } from '../service/budget-service.js'
+import { budgetService } from "../service/budget-service.js";
 import { Types } from "mongoose";
 
 class BudgetController {
@@ -16,7 +16,7 @@ class BudgetController {
         "Бюджет",
         ownerId,
         startSum,
-        memberId
+        memberId,
       );
 
       res.json(result);

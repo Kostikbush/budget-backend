@@ -4,12 +4,11 @@ export const notificationMiddleware = async (req, res, next) => {
   try {
     const userId = req.query?.userId || req.body?.userId;
 
-    let notifications = []
+    let notifications = [];
 
-    if(userId) {
-      notifications = await notificationService.getUserNotifications(
-        userId
-      ) ?? [];
+    if (userId) {
+      notifications =
+        (await notificationService.getUserNotifications(userId)) ?? [];
     }
 
     const originalJson = res.json.bind(res);
@@ -24,7 +23,7 @@ export const notificationMiddleware = async (req, res, next) => {
       return originalJson(extendedData);
     };
   } catch (err) {
-    console.log(err)
+    console.log(err);
   }
 
   next();

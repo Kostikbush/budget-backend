@@ -28,13 +28,13 @@ class NotificationController {
   }
 
   async rejectInvite(req, res) {
-    try{
+    try {
       const { userId } = req.query;
 
       await notificationService.rejectInvite(userId);
 
       res.json({ type: "success" });
-    }catch(error) {
+    } catch (error) {
       res.json({
         message: e?.message ?? "Ошибка при попытке отменить приглашение",
       });
