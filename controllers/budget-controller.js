@@ -16,7 +16,7 @@ class BudgetController {
         "Бюджет",
         ownerId,
         startSum,
-        memberId,
+        memberId
       );
 
       res.json(result);
@@ -72,6 +72,31 @@ class BudgetController {
     } catch (e) {
       res.json({ message: "Ошибка получения бюджета", type: "error" });
       return;
+    }
+  }
+
+  async getAvailableSpendingLimits(req, res) {
+    try {
+      const { userId } = req.query;
+
+      if (!userId) {
+        res.json({ message: "Не передан id пользователя", type: "error" });
+        return;
+      }
+
+      if (!Types.ObjectId.isValid(userId)) {
+        res.json({ message: "Некорректный ID пользователя", type: "error" });
+        return;
+      }
+
+      const limits = await budgetService.getAvailableSpendingLimits(userId);
+
+      res.json(limits);
+    } catch (e) {
+      res.json({
+        message: e?.message ?? "Ошибка получения лимитов",
+        type: "error",
+      });
     }
   }
 }

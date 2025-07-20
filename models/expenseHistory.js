@@ -1,10 +1,8 @@
 import mongoose from "mongoose";
 
 const expenseHistorySchema = new mongoose.Schema({
-  expenseId: {
+  entityId: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: "Expense",
-    required: true,
   },
   userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
   budgetId: {

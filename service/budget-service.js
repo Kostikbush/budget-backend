@@ -14,7 +14,14 @@ import {
   addYears,
   isValid,
   parseISO,
+  differenceInCalendarMonths,
+  startOfMonth,
+  isBefore,
+  differenceInMonths,
 } from "date-fns";
+import goalService from "./goal-service.js";
+import { expenseService } from "./expense-service.js";
+import { cloneDeep } from "lodash-es";
 
 /**
  * @typedef {Object} Budget
@@ -64,7 +71,7 @@ class BudgetService {
         userId,
         memberId,
         TypeNotification.invitation,
-        "Вас приглашают в бюджет",
+        "Вас приглашают в бюджет"
       );
     }
 
@@ -117,7 +124,7 @@ class BudgetService {
     const updatedBudget = await BudgetModel.findByIdAndUpdate(
       budgetId,
       { $push: { invited: invitee._id } },
-      { new: true },
+      { new: true }
     );
 
     // Создаем уведомление о приглашении
@@ -125,7 +132,7 @@ class BudgetService {
       invitee._id,
       "invitation",
       budgetId,
-      `Вас пригласили присоединиться к бюджету "${budget.name}"`,
+      `Вас пригласили присоединиться к бюджету "${budget.name}"`
     );
 
     return { updatedBudget, type: "success" };
@@ -188,33 +195,36 @@ class BudgetService {
     // Находим бюджеты, куда пользователь приглашен
     const invitations = await BudgetModel.find({ invited: userId }).populate(
       "owner",
-      "email name",
+      "email name"
     );
     return { invitations, type: "success" };
   }
 
   /**
    * Получает детальную информацию о бюджете
-   * @param {string} budgetId - ID бюджета
    * @param {string} userId - ID пользователя, запрашивающего информацию
-   * @returns {Promise<Object>} - Детальная информация о бюджете
+   * @returns {Promise<{allExpenses,incomes,budget,type,goals}>} - Детальная информация о бюджете
    */
-  async getBudgetDetails(budgetId, userId) {
-    const budget = await BudgetModel.findById(budgetId)
-      .populate("owner", "email name")
-      .populate("participants", "email name")
-      .populate("invited", "email name");
+  async getBudgetDetails(userId) {
+    const expenses =
+      (await expenseService.getAcceptedExpenses(userId))?.expenses || [];
+    const budget = (await this.getUserBudget(userId))?.budget;
+    const incomes =
+      (await incomeService.getBudgetIncomes(userId)).incomes || [];
+    const goals = ((await goalService.getActiveGoals(userId)).goals || []).map(
+      (goal) => ({
+        ...goal,
+        date: goal.dayOfMoneyWriteOff,
+      })
+    );
 
-    if (!budget) {
-      throw new Error("Бюджет не найден");
-    }
-
-    // Проверяем, имеет ли пользователь доступ к бюджету
-    if (!budget.participants.some((p) => p._id.toString() === userId)) {
-      throw new Error("У вас нет доступа к этому бюджету");
-    }
-
-    return budget;
+    return {
+      allExpenses: [...expenses, ...goals],
+      incomes,
+      budget,
+      goals,
+      type: "success",
+    };
   }
 
   /**
@@ -263,7 +273,7 @@ class BudgetService {
       {
         $pull: { participants: userId },
       },
-      { new: true },
+      { new: true }
     );
 
     // Удаляем бюджет из списка бюджетов пользователя
@@ -293,7 +303,7 @@ class BudgetService {
       ]);
 
       const combined = [...incomes, ...expenses].sort(
-        (a, b) => b.date.getTime() - a.date.getTime(),
+        (a, b) => b.date.getTime() - a.date.getTime()
       );
 
       return {
@@ -308,19 +318,8 @@ class BudgetService {
   }
 }
 
-const frequencyToMonthStep = {
-  daily: 1, // ≈ каждый месяц (условно 30 раз)
-  weekly: 1, // ≈ 4 раза в месяц
-  monthly: 1,
-  yearly: 12,
-};
+const FREQUENCIES = ["daily", "weekly", "monthly", "yearly"];
 
-const frequencyToMultiplier = {
-  daily: 30,
-  weekly: 4,
-  monthly: 1,
-  yearly: 1 / 12,
-};
 class BudgetServiceUtils {
   isUserBudget(budget, userId) {
     if (!budget) {
@@ -338,35 +337,67 @@ class BudgetServiceUtils {
     return true;
   }
 
+  /**
+   * @param {Object} budget - объект бюджета { sum: number }
+   * @param {Array} incomes - массив доходов с полями: amount, frequency, date
+   * @param {Array} expenses - массив расходов с полями: amount, frequency, date
+   * @param {number} years - на сколько лет вперед моделируем
+   * @returns {boolean} - true если бюджет не уходит в минус, иначе false
+   */
   simulateBudgetHealth(budget, incomes, expenses, years = 5) {
     const totalMonths = years * 12;
     const monthlyHistory = new Array(totalMonths).fill(0);
+    const today = startOfMonth(new Date());
+    const end = addMonths(today, totalMonths);
 
-    // Распределяем доходы
-    for (const income of incomes) {
-      const step = frequencyToMonthStep[income.frequency];
-      const multiplier = frequencyToMultiplier[income.frequency];
+    // Распределение по временной шкале
+    const distribute = (list, isIncome = true) => {
+      for (const item of list) {
+        let currentDate = startOfMonth(new Date(item.date));
+        if (isBefore(currentDate, today)) {
+          currentDate = today;
+        }
 
-      for (let m = 0; m < totalMonths; m += step) {
-        monthlyHistory[m] += Math.round(income.amount * multiplier);
+        while (isBefore(currentDate, end)) {
+          const monthIndex = differenceInMonths(currentDate, today);
+          if (monthIndex >= totalMonths) break;
+
+          if (monthIndex >= 0) {
+            monthlyHistory[monthIndex] += isIncome ? item.amount : -item.amount;
+          }
+
+          switch (item.frequency) {
+            case "daily":
+              currentDate = addDays(currentDate, 1);
+              break;
+            case "weekly":
+              currentDate = addWeeks(currentDate, 1);
+              break;
+            case "monthly":
+              currentDate = addMonths(currentDate, 1);
+              break;
+            case "yearly":
+              currentDate = addYears(currentDate, 1);
+              break;
+            case "once":
+            default:
+              // только один раз
+              break;
+          }
+
+          if (item.frequency === "once") break;
+        }
       }
-    }
+    };
 
-    // Распределяем расходы
-    for (const expense of expenses) {
-      const step = frequencyToMonthStep[expense.frequency];
-      const multiplier = frequencyToMultiplier[expense.frequency];
+    distribute(incomes, true);
+    distribute(expenses, false);
 
-      for (let m = 0; m < totalMonths; m += step) {
-        monthlyHistory[m] -= Math.round(expense.amount * multiplier);
-      }
-    }
-
-    // Прогноз по месячным изменениям
+    // Моделируем поведение бюджета
     let runningTotal = budget.sum;
-
     for (let m = 0; m < totalMonths; m++) {
       runningTotal += monthlyHistory[m];
+
       if (runningTotal <= 0) return false;
     }
 
@@ -399,6 +430,47 @@ class BudgetServiceUtils {
       default:
         return null;
     }
+  }
+
+  getAvailableSpendingLimits(budget, expenses, incomes) {
+    const result = {};
+    const MAX_CEIL = 1_000_000;
+
+    for (const frequency of FREQUENCIES) {
+      let low = 0;
+      let high = MAX_CEIL;
+      let best = 0;
+
+      while (low <= high) {
+        const mid = Math.floor((low + high) / 2);
+
+        // Добавим "виртуальный" расход с этой суммой и текущей частотой
+        const simulatedExpenses = cloneDeep(expenses).concat([
+          {
+            amount: mid,
+            frequency,
+            date: new Date(),
+          },
+        ]);
+
+        const isHealthy = this.simulateBudgetHealth(
+          budget,
+          incomes.filter((income) => income.frequency !== "once"),
+          simulatedExpenses
+        );
+
+        if (isHealthy) {
+          best = mid;
+          low = mid + 1;
+        } else {
+          high = mid - 1;
+        }
+      }
+
+      result[frequency] = best;
+    }
+
+    return result;
   }
 }
 

@@ -15,7 +15,6 @@ const expenseSchema = new mongoose.Schema({
   },
   scope: { type: String, enum: ["personal", "shared"], default: "personal" },
   date: { type: Date },
-  nextDate: { type: Date },
   createdAt: { type: Date, default: Date.now },
 });
 

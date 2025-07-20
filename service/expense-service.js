@@ -1,7 +1,6 @@
 import { ExpenseModel } from "../models/expense.js";
 import { notificationService } from "./notification-service.js";
 import { budgetService, budgetServiceUtils } from "./budget-service.js";
-import { IncomeModel } from "../models/income.js";
 import { ExpenseHistoryModel } from "../models/expenseHistory.js";
 import { expenseHistoryService } from "./expense-history-service.js";
 import { TypeNotification } from "../models/notification.js";
@@ -13,6 +12,17 @@ import { isToday } from "date-fns";
  */
 
 class ExpenseService {
+  async getAcceptedExpenses(userId) {
+    const budget = (await budgetService.getUserBudget(userId)).budget;
+    const expenses =
+      (await ExpenseModel.find({
+        budgetId: budget._id.toString(),
+        confirmed: true,
+      })) || [];
+
+    return { expenses, type: "success" };
+  }
+
   /**
    * Получает все расходы для указанного бюджета
    * @param {string} userId - ID пользователя
@@ -38,25 +48,24 @@ class ExpenseService {
       date,
     } = expenseData;
 
-    const budget = (await budgetService.getUserBudget(userId)).budget;
+    const { budget, allExpenses, incomes } =
+      await budgetService.getBudgetDetails(userId);
     const budgetId = budget._id.toString();
     const budgetAmount = budget?.sum ?? 0;
 
-    // Создание объекта для симуляции
-    const allExpenses = await ExpenseModel.find({ budgetId });
-    const simulatedExpenses = [...allExpenses, { amount, frequency }];
-    const incomes = await IncomeModel.find({ budgetId });
+    const simulatedExpenses = [...allExpenses, { amount, frequency, date }];
 
     const isOnce = frequency === "once";
+    const isTodayExpense = isToday(date);
 
-    if ((isOnce || isToday(date)) && budgetAmount - amount < 0) {
+    if ((isOnce || isTodayExpense) && budgetAmount - amount < 0) {
       throw new Error("В бюджете нет средств на этот расход");
     }
 
     const isHealthy = budgetServiceUtils.simulateBudgetHealth(
       budget,
       incomes,
-      simulatedExpenses,
+      simulatedExpenses
     );
 
     if (!isHealthy) {
@@ -66,7 +75,7 @@ class ExpenseService {
     if (isOnce) {
       const response = await expenseHistoryService.create(
         { amount, comment, expenseId: null, priority, scope, frequency, title },
-        userId,
+        userId
       );
 
       return response;
@@ -94,11 +103,23 @@ class ExpenseService {
         recipientId,
         TypeNotification.newExpense,
         `Оппонент хочет добавить новый расход на ${amount}, согласны?`,
-        expense._id,
+        expense._id
       );
     }
 
-    if (isToday(date)) {
+    if (isToday(isTodayExpense)) {
+      await expenseHistoryService.create(
+        {
+          amount,
+          comment,
+          expenseId: expense._id,
+          priority,
+          scope,
+          frequency,
+          title,
+        },
+        userId
+      );
     }
 
     return {
@@ -145,9 +166,8 @@ class ExpenseService {
     } = expenseData;
 
     const expense = await ExpenseModel.findById(expenseId);
-    const expenses = (await this.getBudgetExpenses(userId))?.expenses;
-    const budget = (await budgetService.getUserBudget(userId))?.budget;
-    const incomes = (await incomeService.getBudgetIncomes(userId)).incomes;
+    const { budget, allExpenses, goals, incomes } =
+      await budgetService.getBudgetDetails(userId);
     const budgetAmount = budget?.sum ?? 0;
 
     const budgetId = budget._id.toString();
@@ -165,14 +185,14 @@ class ExpenseService {
         throw new Error("В бюджете нет средств на этот расход");
       }
 
-      const simulatedExpenses = expenses.filter(
-        (exp) => exp._id.toString() !== expenseId,
+      const simulatedExpenses = allExpenses.filter(
+        (exp) => exp._id.toString() !== expenseId
       );
 
       const isHealthy = budgetServiceUtils.simulateBudgetHealth(
         budget,
         incomes,
-        simulatedExpenses,
+        simulatedExpenses
       );
 
       if (!isHealthy) {
@@ -181,7 +201,7 @@ class ExpenseService {
 
       await expenseHistoryService.create(
         { amount, comment, expenseId, priority, scope, frequency, title },
-        userId,
+        userId
       );
 
       await notificationService.delete(expenseId);
@@ -193,23 +213,26 @@ class ExpenseService {
       };
     }
 
-    const simulatedExpenses = expenses.map((exp) => {
-      if (exp._id.toString() === expenseId) {
-        return {
-          ...exp,
-          date,
-          amount,
-          frequency,
-        };
-      }
+    const simulatedExpenses = [
+      allExpenses.map((exp) => {
+        if (exp._id.toString() === expenseId) {
+          return {
+            ...exp,
+            date,
+            amount,
+            frequency,
+          };
+        }
 
-      return exp;
-    });
+        return exp;
+      }),
+      ...goals,
+    ];
 
     const isHealthy = budgetServiceUtils.simulateBudgetHealth(
       budget,
       incomes,
-      simulatedExpenses,
+      simulatedExpenses
     );
 
     if (!isHealthy) {
@@ -228,7 +251,7 @@ class ExpenseService {
       if (!isToday(new Date(lastHistory.date))) {
         await expenseHistoryService.create(
           { amount, comment, expenseId, priority, scope, frequency, title },
-          userId,
+          userId
         );
       }
     }

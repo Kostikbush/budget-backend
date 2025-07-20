@@ -13,7 +13,7 @@ const goalSchema = new mongoose.Schema({
   // частота списания
   frequency: {
     type: String,
-    enum: ["once", "daily", "weekly", "monthly", "yearly"],
+    enum: ["daily", "weekly", "monthly", "yearly"],
     default: "daily",
   },
   // Дата списания денег из бюджета в цель
