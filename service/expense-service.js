@@ -65,7 +65,7 @@ class ExpenseService {
     const isHealthy = budgetServiceUtils.simulateBudgetHealth(
       budget,
       incomes,
-      simulatedExpenses
+      simulatedExpenses,
     );
 
     if (!isHealthy) {
@@ -74,8 +74,8 @@ class ExpenseService {
 
     if (isOnce) {
       const response = await expenseHistoryService.create(
-        { amount, comment, expenseId: null, priority, scope, frequency, title },
-        userId
+        { amount, comment, entityId: null, priority, scope, frequency, title },
+        userId,
       );
 
       return response;
@@ -103,7 +103,7 @@ class ExpenseService {
         recipientId,
         TypeNotification.newExpense,
         `Оппонент хочет добавить новый расход на ${amount}, согласны?`,
-        expense._id
+        expense._id,
       );
     }
 
@@ -112,13 +112,13 @@ class ExpenseService {
         {
           amount,
           comment,
-          expenseId: expense._id,
+          entityId: expense._id,
           priority,
           scope,
           frequency,
           title,
         },
-        userId
+        userId,
       );
     }
 
@@ -186,13 +186,13 @@ class ExpenseService {
       }
 
       const simulatedExpenses = allExpenses.filter(
-        (exp) => exp._id.toString() !== expenseId
+        (exp) => exp._id.toString() !== expenseId,
       );
 
       const isHealthy = budgetServiceUtils.simulateBudgetHealth(
         budget,
         incomes,
-        simulatedExpenses
+        simulatedExpenses,
       );
 
       if (!isHealthy) {
@@ -200,8 +200,16 @@ class ExpenseService {
       }
 
       await expenseHistoryService.create(
-        { amount, comment, expenseId, priority, scope, frequency, title },
-        userId
+        {
+          amount,
+          comment,
+          entityId: expenseId,
+          priority,
+          scope,
+          frequency,
+          title,
+        },
+        userId,
       );
 
       await notificationService.delete(expenseId);
@@ -232,7 +240,7 @@ class ExpenseService {
     const isHealthy = budgetServiceUtils.simulateBudgetHealth(
       budget,
       incomes,
-      simulatedExpenses
+      simulatedExpenses,
     );
 
     if (!isHealthy) {
@@ -250,8 +258,16 @@ class ExpenseService {
 
       if (!isToday(new Date(lastHistory.date))) {
         await expenseHistoryService.create(
-          { amount, comment, expenseId, priority, scope, frequency, title },
-          userId
+          {
+            amount,
+            comment,
+            entityId: expenseId,
+            priority,
+            scope,
+            frequency,
+            title,
+          },
+          userId,
         );
       }
     }

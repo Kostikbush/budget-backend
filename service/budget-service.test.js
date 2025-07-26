@@ -22,7 +22,7 @@ describe("simulateBudgetHealth", () => {
     const result = budgetServiceUtils.simulateBudgetHealth(
       budget,
       incomes,
-      expenses
+      expenses,
     );
     expect(result).toBe(true);
   });
@@ -35,7 +35,7 @@ describe("simulateBudgetHealth", () => {
     const result = budgetServiceUtils.simulateBudgetHealth(
       budget,
       incomes,
-      expenses
+      expenses,
     );
     expect(result).toBe(false);
   });
@@ -48,7 +48,7 @@ describe("simulateBudgetHealth", () => {
     const result = budgetServiceUtils.simulateBudgetHealth(
       budget,
       incomes,
-      expenses
+      expenses,
     );
     expect(result).toBe(false);
   });
@@ -66,7 +66,7 @@ describe("simulateBudgetHealth", () => {
     const result = budgetServiceUtils.simulateBudgetHealth(
       budget,
       incomes,
-      expenses
+      expenses,
     );
     expect(result).toBe(true);
   });
@@ -82,7 +82,7 @@ describe("simulateBudgetHealth", () => {
     const result = budgetServiceUtils.simulateBudgetHealth(
       budget,
       incomes,
-      expenses
+      expenses,
     );
     expect(result).toBe(false);
   });
@@ -99,7 +99,7 @@ describe("getAvailableSpendingLimits", () => {
     const result = budgetServiceUtils.getAvailableSpendingLimits(
       budget,
       expenses,
-      incomes
+      incomes,
     );
     expect(result).toEqual({
       daily: 0,
@@ -117,7 +117,7 @@ describe("getAvailableSpendingLimits", () => {
     const result = budgetServiceUtils.getAvailableSpendingLimits(
       budget,
       expenses,
-      incomes
+      incomes,
     );
 
     // Мы не можем предсказать точное значение, но они должны быть положительными
@@ -134,7 +134,7 @@ describe("getAvailableSpendingLimits", () => {
     const result = budgetServiceUtils.getAvailableSpendingLimits(
       budget,
       expenses,
-      incomes
+      incomes,
     );
     expect(result).toEqual({
       daily: 0,
@@ -154,7 +154,7 @@ describe("getAvailableSpendingLimits", () => {
     const result = budgetServiceUtils.getAvailableSpendingLimits(
       budget,
       expenses,
-      incomes
+      incomes,
     );
 
     // В первые 2 месяца бюджет должен быть ограничен текущей суммой
@@ -174,7 +174,7 @@ describe("getAvailableSpendingLimits", () => {
     const result = budgetServiceUtils.getAvailableSpendingLimits(
       budget,
       expenses,
-      incomes
+      incomes,
     );
 
     expect(result.daily).toBeGreaterThan(0);
@@ -191,7 +191,7 @@ describe("getAvailableSpendingLimits", () => {
     const result = budgetServiceUtils.getAvailableSpendingLimits(
       budget,
       expenses,
-      incomes
+      incomes,
     );
 
     // Даже при one-time доходе нельзя считать его за регулярный

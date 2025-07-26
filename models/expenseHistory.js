@@ -26,5 +26,5 @@ const expenseHistorySchema = new mongoose.Schema({
 
 export const ExpenseHistoryModel = mongoose.model(
   "ExpenseHistory",
-  expenseHistorySchema
+  expenseHistorySchema,
 );

@@ -11,6 +11,7 @@ import {
   refresh,
   register,
 } from "../controllers/auth-controller.js";
+import goalController from "../controllers/goal-controller.js";
 
 const router = new Router();
 
@@ -35,39 +36,23 @@ router.put("/updateExpense", expenseController.updateExpense);
 router.delete("/deleteExpense", expenseController.deleteExpense);
 router.get("/acceptExpense", expenseController.acceptExpense);
 router.get("/rejectExpense", expenseController.rejectExpense);
-
-// /budgets
-// Метод	Путь	Описание
-// GET	/	Получить все бюджеты пользователя
-// POST	/	Создать бюджет
-// POST	/:id/invite	Пригласить пользователя
-// POST	/:id/accept	Принять приглашение
-
-// /incomes
-// Метод	Путь	Описание
-// POST	/	Создать доход
-// GET	/budget/:budgetId	Доходы по бюджету
-// PATCH	/:id/confirm	Подтвердить доход
-// DELETE	/:id	Удалить доход
-
-// /expenses
-// Метод	Путь	Описание
-// POST	/	Создать расход
-// GET	/budget/:budgetId	Получить расходы
-// PATCH	/:id/confirm	Подтвердить расход
-// POST	/:id/approve	Одобрить общий расход
-// DELETE	/:id	Удалить расход
-
-// /goals
-// Метод	Путь	Описание
-// POST	/	Создать цель
-// GET	/budget/:budgetId	Получить цели бюджета
-// PATCH	/:id	Обновить цель
-// DELETE	/:id	Удалить цель
-
-// /notifications
-// Метод	Путь	Описание
-// GET	/	Получить все уведомления
-// PATCH	/:id/read	Пометить как прочитанное
-
+router.get(
+  "/availableSpendingLimits",
+  budgetController.getAvailableSpendingLimits
+);
+router.get("/goals", goalController.getGoals);
+router.post("/createGoal", goalController.createGoal);
+router.put("/updateGoal", goalController.updateGoal);
+router.delete("/deleteADebitGoal", goalController.deleteADebitGoal);
+router.put(
+  "/deductAmountFromGoalToBudget",
+  goalController.deductAmountFromGoalToBudget
+);
+router.put("/updateIncomeHistory", budgetController.updateIncomeHistory);
+router.put("/updateExpenseHistory", budgetController.updateExpenseHistory);
+router.delete("/deleteIncomeHistory", budgetController.deleteIncomeHistoryItem);
+router.delete(
+  "/deleteExpenseHistory",
+  budgetController.deleteExpenseHistoryItem
+);
 export default router;

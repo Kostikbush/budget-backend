@@ -1,11 +1,9 @@
 import { BudgetModel } from "../models/budget.js";
 import { ExpenseHistoryModel } from "../models/expenseHistory.js";
 import { IncomeHistoryModel } from "../models/incomeHistory.js";
-import { IncomeModel } from "../models/income.js";
 import { TypeNotification } from "../models/notification.js";
 import UserModel from "../models/user.js";
 import { notificationService } from "./notification-service.js";
-import { ExpenseModel } from "../models/expense.js";
 import { Types } from "mongoose";
 import {
   addDays,
@@ -14,7 +12,6 @@ import {
   addYears,
   isValid,
   parseISO,
-  differenceInCalendarMonths,
   startOfMonth,
   isBefore,
   differenceInMonths,
@@ -22,6 +19,7 @@ import {
 import goalService from "./goal-service.js";
 import { expenseService } from "./expense-service.js";
 import { cloneDeep } from "lodash-es";
+import { incomeService } from "./income-service.js";
 
 /**
  * @typedef {Object} Budget
@@ -38,6 +36,23 @@ import { cloneDeep } from "lodash-es";
  * Сервис для работы с бюджетами
  */
 class BudgetService {
+  async getAvailableSpendingLimits(userId) {
+    const { budget, allExpenses, incomes } = await this.getBudgetDetails(
+      userId
+    );
+
+    const response = budgetServiceUtils.getAvailableSpendingLimits(
+      budget,
+      allExpenses,
+      incomes
+    );
+
+    return {
+      limits: response,
+      type: "success",
+    };
+  }
+
   /**
    * Создает новый бюджет
    * @param {string} name - Название бюджета
@@ -81,11 +96,6 @@ class BudgetService {
       type: "success",
     };
   }
-  // Проверка на покрытие бюджета вперёд на 1-5 лет
-  async checkBudgetCoverage(expenseData) {
-    // Логика проверки покрытия бюджета
-  }
-
   /**
    * Приглашает пользователя в бюджет
    * @param {string} budgetId - ID бюджета
@@ -179,11 +189,7 @@ class BudgetService {
       $or: [{ owner: userId }, { "members._id": userId }],
     });
 
-    if (!budget) {
-      throw new Error("Бюджет не найден");
-    }
-    budget._id;
-    return { budget, type: "success" };
+    return { budget: budget || null, type: "success" };
   }
 
   /**
@@ -284,37 +290,42 @@ class BudgetService {
     return { updatedBudget, type: "success" };
   }
 
-  async history({ budgetId, after, limit = 20, type = "all" }) {
-    try {
-      const dateFilter = after ? { date: { $lt: new Date(after) } } : {};
-      const calcLimit = type === "all" ? limit / 2 : limit;
+  async history({ userId, after, limit = 20, type = "all" }) {
+    const budget = await BudgetModel.findOne({
+      $or: [{ owner: userId }, { "members._id": userId }],
+    });
 
-      const [incomes, expenses] = await Promise.all([
-        type === "all" || type === "income"
-          ? IncomeHistoryModel.find({ budgetId, ...dateFilter })
-              .sort({ date: -1 })
-              .limit(calcLimit)
-          : Promise.resolve([]),
-        type === "all" || type === "expense"
-          ? ExpenseHistoryModel.find({ budgetId, ...dateFilter })
-              .sort({ date: -1 })
-              .limit(calcLimit)
-          : Promise.resolve([]),
-      ]);
-
-      const combined = [...incomes, ...expenses].sort(
-        (a, b) => b.date.getTime() - a.date.getTime()
-      );
-
-      return {
-        items: combined,
-        hasMore: combined.length === limit,
-        nextCursor: combined.at(-1)?.date ?? null,
-        type: "success",
-      };
-    } catch (error) {
-      return error;
+    if (!budget) {
+      throw new Error("Бюджет не найден");
     }
+
+    const budgetId = budget._id.toString();
+    const dateFilter = after ? { date: { $lt: new Date(after) } } : {};
+    const calcLimit = type === "all" ? limit / 2 : limit;
+
+    const [incomes, expenses] = await Promise.all([
+      type === "all" || type === "income"
+        ? IncomeHistoryModel.find({ budgetId, ...dateFilter })
+            .sort({ date: -1 })
+            .limit(calcLimit)
+        : Promise.resolve([]),
+      type === "all" || type === "expense"
+        ? ExpenseHistoryModel.find({ budgetId, ...dateFilter })
+            .sort({ date: -1 })
+            .limit(calcLimit)
+        : Promise.resolve([]),
+    ]);
+
+    const combined = [...incomes, ...expenses].sort(
+      (a, b) => b.date.getTime() - a.date.getTime()
+    );
+
+    return {
+      items: combined,
+      hasMore: combined.length === limit,
+      nextCursor: combined.at(-1)?.date ?? null,
+      type: "success",
+    };
   }
 }
 
@@ -469,7 +480,7 @@ class BudgetServiceUtils {
 
       result[frequency] = best;
     }
-
+    console.log({ sum: budget.sum, expenses, incomes, result });
     return result;
   }
 }

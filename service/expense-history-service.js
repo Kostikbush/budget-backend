@@ -3,8 +3,17 @@ import { budgetService, budgetServiceUtils } from "./budget-service.js";
 
 class ExpenseHistoryService {
   async create(expenseData, userId) {
-    const { amount, comment, expenseId, priority, scope, frequency, title } =
-      expenseData;
+    const {
+      amount,
+      comment,
+      entityId,
+      priority,
+      scope,
+      frequency,
+      title,
+      date = new Date(),
+      type = "expense",
+    } = expenseData;
     const budget = (await budgetService.getUserBudget(userId)).budget;
 
     budget.sum -= amount;
@@ -16,23 +25,24 @@ class ExpenseHistoryService {
       amount,
       budgetId: budget._id.toString(),
       comment,
-      date: new Date(),
-      expenseId: expenseId ?? null,
+      date,
+      entityId,
       userId,
       frequency,
       priority,
       scope,
+      type,
     });
 
     return { type: "success" };
   }
 
-  async updateExpenseHistory(userId, expenseData, entityId) {
-    const { amount, comment, priority, scope, frequency, title } = expenseData;
+  async updateExpenseHistory(userId, expenseData) {
+    const { amount, _id } = expenseData;
     const { budget, allExpenses, incomes } =
       await budgetService.getBudgetDetails(userId);
     const expenseHistoryItem = await ExpenseHistoryModel.findOne({
-      _id: entityId,
+      _id: _id,
     });
 
     if (!expenseHistoryItem) {
@@ -40,8 +50,9 @@ class ExpenseHistoryService {
     }
 
     if (amount <= expenseHistoryItem.amount) {
+      console.log(expenseHistoryItem.amount - amount);
       budget.sum += expenseHistoryItem.amount - amount;
-
+      console.log(budget.sum);
       await budget.save();
     } else if (amount > expenseHistoryItem.amount) {
       budget.sum -= amount - expenseHistoryItem.amount;
@@ -64,15 +75,10 @@ class ExpenseHistoryService {
     }
 
     await ExpenseHistoryModel.updateOne(
-      { _id: entityId },
+      { _id: _id },
       {
         $set: {
-          title,
           amount,
-          comment,
-          priority,
-          scope,
-          frequency,
         },
       }
     );

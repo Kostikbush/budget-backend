@@ -5,6 +5,7 @@ const BudgetSchema = new Schema(
     name: { type: String, required: true },
     sum: { type: Number, required: true },
     owner: { type: Types.ObjectId, ref: "User", required: true },
+    updatedAt: { type: Date, default: Date.now, required: true },
     members: [
       {
         user: { type: Types.ObjectId, ref: "User" },

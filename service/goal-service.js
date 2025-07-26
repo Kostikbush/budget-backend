@@ -1,8 +1,8 @@
 import { isToday } from "date-fns";
-import { GoalModel } from "../models/goal";
-import { budgetService, budgetServiceUtils } from "./budget-service";
-import { expenseHistoryService } from "./expense-history-service";
-import { incomeHistoryService } from "./income-history-service";
+import { GoalModel } from "../models/goal.js";
+import { budgetService, budgetServiceUtils } from "./budget-service.js";
+import { expenseHistoryService } from "./expense-history-service.js";
+import { incomeHistoryService } from "./income-history-service.js";
 
 class GoalService {
   async getGoals(userId) {
@@ -62,7 +62,7 @@ class GoalService {
       await expenseHistoryService.create(
         {
           amount,
-          expenseId: null,
+          entityId: null,
           priority: 1,
           scope: "shared",
           frequency,
@@ -79,7 +79,13 @@ class GoalService {
         title,
         currentAmount,
         dayOfMoneyWriteOff,
-        endDate: new Date(),
+        endDate: this.calculateGoalEndDate({
+          currentAmount,
+          targetAmount,
+          amountPerStep: amount,
+          frequency,
+          startDate: dayOfMoneyWriteOff,
+        }),
         frequency,
         isCompleted: true,
         targetAmount,
@@ -137,7 +143,7 @@ class GoalService {
       await expenseHistoryService.create(
         {
           amount: minusSum,
-          expenseId: null,
+          entityId: null,
           priority: 1,
           scope: "shared",
           frequency,
@@ -244,7 +250,7 @@ class GoalService {
           {
             amount: minusSum,
             comment,
-            goalId,
+            entityId: goalId,
             priority,
             scope,
             frequency,
@@ -266,7 +272,7 @@ class GoalService {
       await expenseHistoryService.create(
         {
           amount: minusSum,
-          expenseId: null,
+          entityId: goalId,
           priority: 1,
           scope: "shared",
           frequency,

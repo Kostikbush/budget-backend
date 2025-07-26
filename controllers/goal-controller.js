@@ -1,9 +1,9 @@
-import goalService from "../service/goal-service";
+import goalService from "../service/goal-service.js";
 
 class GoalController {
   async getGoals(req, res) {
     try {
-      const { userId } = req;
+      const { userId } = req.query;
 
       const response = await goalService.getGoals(userId);
 
@@ -18,7 +18,7 @@ class GoalController {
 
   async createGoal(req, res) {
     try {
-      const { userId, goalData } = req;
+      const { userId, goalData } = req.body;
 
       const response = await goalService.createGoal(userId, goalData);
 
@@ -32,7 +32,7 @@ class GoalController {
   }
   async updateGoal(req, res) {
     try {
-      const { userId, goalData } = req;
+      const { userId, goalData } = req.body;
 
       const response = await goalService.updateGoal(userId, goalData);
 
@@ -46,7 +46,7 @@ class GoalController {
   }
   async deleteADebitGoal(req, res) {
     try {
-      const { userId, goalId } = req;
+      const { userId, goalId } = req.query;
 
       const response = await goalService.deleteADebitGoal(userId, goalId);
 
@@ -61,7 +61,7 @@ class GoalController {
 
   async deductAmountFromGoalToBudget(req, res) {
     try {
-      const { goalId, amount } = req;
+      const { goalId, amount } = req.body;
 
       const response = await goalService.deductAmountFromGoalToBudget(
         goalId,

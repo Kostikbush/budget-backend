@@ -3,6 +3,8 @@ import { BudgetModel } from "../models/budget.js";
 import { incomeHistoryService } from "./income-history-service.js";
 import { budgetService, budgetServiceUtils } from "./budget-service.js";
 import { ExpenseModel } from "../models/expense.js";
+import { isToday } from "date-fns";
+import { IncomeHistoryModel } from "../models/incomeHistory.js";
 
 /**
  * Сервис для работы с доходами
@@ -21,6 +23,8 @@ class IncomeService {
   async createIncome(incomeData, userId) {
     const { title, amount, frequency = "once", date } = incomeData;
 
+    let nextDate = date;
+
     const budget = (await budgetService.getUserBudget(userId)).budget;
 
     const budgetId = budget._id.toString();
@@ -32,10 +36,23 @@ class IncomeService {
           amount,
           frequency,
         },
-        userId,
+        userId
       );
 
       return { type: "success" };
+    }
+
+    if (isToday(date)) {
+      await incomeHistoryService.create(
+        {
+          title,
+          amount,
+          frequency,
+        },
+        userId
+      );
+
+      nextDate = budgetServiceUtils.getNextDateFromFrequency(date, frequency);
     }
 
     await IncomeModel.create({
@@ -44,8 +61,7 @@ class IncomeService {
       title,
       amount,
       frequency,
-      date: new Date(date),
-      nextDate: budgetServiceUtils.getNextDateFromFrequency(date, frequency),
+      date: nextDate,
       createdAt: new Date(),
     });
 
@@ -61,25 +77,20 @@ class IncomeService {
       throw new Error("Доход не найден");
     }
 
-    const budgetId = income.budgetId.toString();
-
-    const [budget, incomes, expenses] = await Promise.all([
-      BudgetModel.findById(budgetId),
-      IncomeModel.find({ budgetId }),
-      ExpenseModel.find({ budgetId }),
-    ]);
+    const { budget, allExpenses, incomes } =
+      await budgetService.getBudgetDetails(income.userId.toString());
 
     if (!budget) throw new Error("Бюджет не найден");
 
     const newIncomes = incomes.filter(
-      (income) => income._id.toString() !== incomeId,
+      (income) => income._id.toString() !== incomeId
     );
 
     if (
-      !budgetServiceUtils.simulateBudgetHealth(budget, newIncomes, expenses)
+      !budgetServiceUtils.simulateBudgetHealth(budget, newIncomes, allExpenses)
     ) {
       throw new Error(
-        "Удаляя доход бюджет уйдет в минус через некоторое время!",
+        "Удаляя доход бюджет уйдет в минус через некоторое время!"
       );
     }
 
@@ -118,6 +129,8 @@ class IncomeService {
     // Находим доход
     const income = await IncomeModel.findById(incomeId);
     const budgetId = income.budgetId._id.toString();
+    let nextDate = date;
+
     if (!income) {
       throw new Error("Доход не найден");
     }
@@ -131,7 +144,7 @@ class IncomeService {
           amount,
         },
         budgetId,
-        income.userId.toString(),
+        income.userId.toString()
       );
 
       return {
@@ -139,11 +152,8 @@ class IncomeService {
       };
     }
 
-    const [budget, incomes, expenses] = await Promise.all([
-      BudgetModel.findById(budgetId),
-      IncomeModel.find({ budgetId }),
-      ExpenseModel.find({ budgetId }),
-    ]);
+    const { budget, allExpenses, incomes } =
+      await budgetService.getBudgetDetails(income.userId.toString());
 
     if (
       !budgetServiceUtils.simulateBudgetHealth(
@@ -158,12 +168,31 @@ class IncomeService {
 
           return inc;
         }),
-        expenses,
+        allExpenses
       )
     ) {
       throw new Error(
-        "Изменяя доход бюджет уйдет в минус через некоторое время!",
+        "Изменяя доход бюджет уйдет в минус через некоторое время!"
       );
+    }
+
+    if (isToday(date)) {
+      const lastHistoryIncome = await IncomeHistoryModel.findOne({
+        incomeId: incomeId,
+      }).sort({ createdAt: -1 });
+
+      nextDate = budgetServiceUtils.getNextDateFromFrequency(date, frequency);
+
+      if (!isToday(lastHistoryIncome.date)) {
+        await incomeHistoryService.create(
+          {
+            title,
+            amount,
+            frequency,
+          },
+          income.userId.toString()
+        );
+      }
     }
 
     // Обновляем доход
@@ -173,9 +202,9 @@ class IncomeService {
         title: title,
         amount: amount,
         frequency: frequency,
-        date: date,
+        date: nextDate,
       },
-      { new: true },
+      { new: true }
     );
 
     return { updatedIncome, type: "success" };

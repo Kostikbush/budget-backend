@@ -8,6 +8,7 @@ import morgan from "morgan";
 import router from "./router/index.js";
 
 import { notificationMiddleware } from "./middleware/notification.js";
+import { budgetSyncMiddleware } from "./middleware/budget.js";
 
 dotenv.config();
 
@@ -15,13 +16,12 @@ const PORT = process.env.PORT ?? 5000;
 const app = express();
 
 app.use(express.static("public"));
-
+app.use(budgetSyncMiddleware);
 app.use(notificationMiddleware);
-
 app.use(express.json());
 app.use(morgan("dev"));
 
-app.use((req, res, next) => {
+app.use((req, _, next) => {
   if (["POST", "PUT", "PATCH", "GET", "DELETE"].includes(req.method)) {
     console.log(`[BODY] ${req.method} ${req.originalUrl}:`, req.body);
   }

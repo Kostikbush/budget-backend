@@ -9,23 +9,31 @@ class IncomeHistoryService {
    * @param {number} incomeData.amount - Ожидаемая сумма.
    * @param {string} incomeData.date - Дата зачисления.
    * @param {string} incomeData.frequency - Частота зачисления.
+   * @param {string} incomeData.incomeId - ID дохода, если это обновление
    * @param {string} userId - ID пользователя
    * @returns {Promise<Object>} - Созданный доход
    */
 
   async create(incomeData, userId) {
     const budget = (await budgetService.getUserBudget(userId)).budget;
+    const {
+      title,
+      amount,
+      frequency,
+      date = new Date(),
+      incomeId = null,
+    } = incomeData;
 
-    budget.sum += incomeData.amount;
+    budget.sum += amount;
 
     await IncomeHistoryModel.create({
-      amount: incomeData.amount,
+      amount: amount,
       budgetId: budget._id.toString(),
-      date: new Date(),
+      date: date,
       userId: userId,
-      incomeId: incomeData?.incomeId ?? null,
-      frequency: incomeData.frequency,
-      title: incomeData.title,
+      incomeId: incomeId,
+      frequency: frequency,
+      title: title,
     });
 
     await budget.save();
@@ -34,11 +42,11 @@ class IncomeHistoryService {
   }
 
   async updateIncomeHistory(userId, incomeData) {
-    const { amount, frequency, title, incomeHistoryId } = incomeData;
+    const { amount, _id } = incomeData;
     const { budget, allExpenses, incomes } =
       await budgetService.getBudgetDetails(userId);
     const incomeHistoryItem = await IncomeHistoryModel.findOne({
-      _id: incomeHistoryId,
+      _id: _id,
     });
 
     if (!incomeHistoryItem) {
@@ -74,12 +82,10 @@ class IncomeHistoryService {
     }
 
     await IncomeHistoryModel.updateOne(
-      { _id: incomeHistoryId },
+      { _id: _id },
       {
         $set: {
           amount,
-          frequency,
-          title,
         },
       }
     );
