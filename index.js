@@ -15,12 +15,6 @@ dotenv.config();
 const PORT = process.env.PORT ?? 5000;
 const app = express();
 
-app.use(express.static("public"));
-app.use(budgetSyncMiddleware);
-app.use(notificationMiddleware);
-app.use(express.json());
-app.use(morgan("dev"));
-
 app.use((req, _, next) => {
   if (["POST", "PUT", "PATCH", "GET", "DELETE"].includes(req.method)) {
     console.log(`[BODY] ${req.method} ${req.originalUrl}:`, req.body);
@@ -28,6 +22,11 @@ app.use((req, _, next) => {
   next();
 });
 
+app.use(express.static("public"));
+app.use(budgetSyncMiddleware);
+app.use(notificationMiddleware);
+app.use(express.json());
+app.use(morgan("dev"));
 app.use(cookieParser());
 app.use(cors());
 app.use("/api", router);

@@ -1,3 +1,4 @@
+import { isToday } from "date-fns";
 import { IncomeHistoryModel } from "../models/incomeHistory.js";
 import { budgetService } from "./budget-service.js";
 
@@ -24,21 +25,49 @@ class IncomeHistoryService {
       incomeId = null,
     } = incomeData;
 
-    budget.sum += amount;
+    if (incomeId) {
+      const incomeInHistory = await IncomeHistoryModel.findOne({
+        incomeId,
+      }).sort({ date: -1 });
 
-    await IncomeHistoryModel.create({
-      amount: amount,
-      budgetId: budget._id.toString(),
-      date: date,
-      userId: userId,
-      incomeId: incomeId,
-      frequency: frequency,
-      title: title,
-    });
+      if (incomeInHistory) {
+        const date = incomeInHistory.date;
 
-    await budget.save();
+        if (isToday(new Date(date))) {
+          return { type: "success" };
+        }
+      }
+    }
 
-    return { type: "success" };
+    try {
+      await IncomeHistoryModel.create({
+        amount: amount,
+        budgetId: budget._id.toString(),
+        date: date,
+        userId: userId,
+        incomeId: incomeId,
+        frequency: frequency,
+        title: title,
+      });
+
+      budget.sum += amount;
+      await budget.save();
+
+      return { type: "success" };
+    } catch (error) {
+      if (
+        error.code === 11000 &&
+        error.message.includes("entityId") &&
+        error.message.includes("date")
+      ) {
+        budget.sum -= amount;
+        await budget.save();
+        return { type: "success" };
+      }
+
+      // иначе пробрасываем ошибку
+      throw new Error(error);
+    }
   }
 
   async updateIncomeHistory(userId, incomeData) {

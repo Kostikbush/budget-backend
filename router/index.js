@@ -44,6 +44,10 @@ router.get("/goals", goalController.getGoals);
 router.post("/createGoal", goalController.createGoal);
 router.put("/updateGoal", goalController.updateGoal);
 router.delete("/deleteADebitGoal", goalController.deleteADebitGoal);
+router.delete(
+  "/deleteAndReturnDebit",
+  goalController.deleteAmountFromGoalToBudget
+);
 router.put(
   "/deductAmountFromGoalToBudget",
   goalController.deductAmountFromGoalToBudget

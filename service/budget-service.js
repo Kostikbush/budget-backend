@@ -15,6 +15,8 @@ import {
   startOfMonth,
   isBefore,
   differenceInMonths,
+  startOfDay,
+  isAfter,
 } from "date-fns";
 import goalService from "./goal-service.js";
 import { expenseService } from "./expense-service.js";
@@ -36,7 +38,7 @@ import { incomeService } from "./income-service.js";
  * Сервис для работы с бюджетами
  */
 class BudgetService {
-  async getAvailableSpendingLimits(userId) {
+  async getAvailableSpendingLimits(userId, date, excludeId = null) {
     const { budget, allExpenses, incomes } = await this.getBudgetDetails(
       userId
     );
@@ -44,7 +46,8 @@ class BudgetService {
     const response = budgetServiceUtils.getAvailableSpendingLimits(
       budget,
       allExpenses,
-      incomes
+      incomes,
+      { date: new Date(date), excludeId }
     );
 
     return {
@@ -218,10 +221,9 @@ class BudgetService {
     const incomes =
       (await incomeService.getBudgetIncomes(userId)).incomes || [];
     const goals = ((await goalService.getActiveGoals(userId)).goals || []).map(
-      (goal) => ({
-        ...goal,
-        date: goal.dayOfMoneyWriteOff,
-      })
+      (goal) => {
+        return { ...goal._doc, date: goal.dayOfMoneyWriteOff };
+      }
     );
 
     return {
@@ -290,7 +292,7 @@ class BudgetService {
     return { updatedBudget, type: "success" };
   }
 
-  async history({ userId, after, limit = 20, type = "all" }) {
+  async history({ userId, after, limit, type = "all" }) {
     const budget = await BudgetModel.findOne({
       $or: [{ owner: userId }, { "members._id": userId }],
     });
@@ -301,20 +303,31 @@ class BudgetService {
 
     const budgetId = budget._id.toString();
     const dateFilter = after ? { date: { $lt: new Date(after) } } : {};
-    const calcLimit = type === "all" ? limit / 2 : limit;
+    const calcLimit = type === "all" ? Math.floor(limit / 2) : limit;
 
-    const [incomes, expenses] = await Promise.all([
-      type === "all" || type === "income"
-        ? IncomeHistoryModel.find({ budgetId, ...dateFilter })
-            .sort({ date: -1 })
-            .limit(calcLimit)
-        : Promise.resolve([]),
-      type === "all" || type === "expense"
-        ? ExpenseHistoryModel.find({ budgetId, ...dateFilter })
-            .sort({ date: -1 })
-            .limit(calcLimit)
-        : Promise.resolve([]),
-    ]);
+    let incomes = [];
+    let expenses = [];
+    let hasMore = false;
+
+    if (type === "all" || type === "income") {
+      incomes = await IncomeHistoryModel.find({ budgetId, ...dateFilter })
+        .sort({ date: -1 })
+        .limit(calcLimit + 1); // загружаем на 1 больше
+      if (incomes.length > calcLimit) {
+        hasMore = true;
+        incomes = incomes.slice(0, calcLimit);
+      }
+    }
+
+    if (type === "all" || type === "expense") {
+      expenses = await ExpenseHistoryModel.find({ budgetId, ...dateFilter })
+        .sort({ date: -1 })
+        .limit(calcLimit + 1);
+      if (expenses.length > calcLimit) {
+        hasMore = true;
+        expenses = expenses.slice(0, calcLimit);
+      }
+    }
 
     const combined = [...incomes, ...expenses].sort(
       (a, b) => b.date.getTime() - a.date.getTime()
@@ -322,7 +335,7 @@ class BudgetService {
 
     return {
       items: combined,
-      hasMore: combined.length === limit,
+      hasMore,
       nextCursor: combined.at(-1)?.date ?? null,
       type: "success",
     };
@@ -356,60 +369,46 @@ class BudgetServiceUtils {
    * @returns {boolean} - true если бюджет не уходит в минус, иначе false
    */
   simulateBudgetHealth(budget, incomes, expenses, years = 5) {
-    const totalMonths = years * 12;
-    const monthlyHistory = new Array(totalMonths).fill(0);
-    const today = startOfMonth(new Date());
-    const end = addMonths(today, totalMonths);
+    const today = startOfDay(new Date());
+    const end = addYears(today, years);
+    // const calcExpenses = excludeId
+    //   ? expenses.filter((element) => element._id?.toString() !== excludeId)
+    //   : expenses;
 
-    // Распределение по временной шкале
-    const distribute = (list, isIncome = true) => {
+    const events = [];
+
+    const collect = (list, sign = 1) => {
       for (const item of list) {
-        let currentDate = startOfMonth(new Date(item.date));
-        if (isBefore(currentDate, today)) {
-          currentDate = today;
-        }
+        let currentDate = startOfDay(new Date(item.date));
+        if (isBefore(currentDate, today)) currentDate = today;
 
-        while (isBefore(currentDate, end)) {
-          const monthIndex = differenceInMonths(currentDate, today);
-          if (monthIndex >= totalMonths) break;
-
-          if (monthIndex >= 0) {
-            monthlyHistory[monthIndex] += isIncome ? item.amount : -item.amount;
-          }
-
-          switch (item.frequency) {
-            case "daily":
-              currentDate = addDays(currentDate, 1);
-              break;
-            case "weekly":
-              currentDate = addWeeks(currentDate, 1);
-              break;
-            case "monthly":
-              currentDate = addMonths(currentDate, 1);
-              break;
-            case "yearly":
-              currentDate = addYears(currentDate, 1);
-              break;
-            case "once":
-            default:
-              // только один раз
-              break;
-          }
+        while (!isAfter(currentDate, end)) {
+          events.push({
+            date: currentDate.getTime(),
+            amount: item.amount * sign,
+          });
 
           if (item.frequency === "once") break;
+
+          currentDate = this.getNextDateFromFrequency(
+            currentDate,
+            item.frequency
+          );
         }
       }
     };
 
-    distribute(incomes, true);
-    distribute(expenses, false);
+    collect(incomes, +1);
+    collect(expenses, -1);
 
-    // Моделируем поведение бюджета
-    let runningTotal = budget.sum;
-    for (let m = 0; m < totalMonths; m++) {
-      runningTotal += monthlyHistory[m];
+    // Сортируем события по дате
+    events.sort((a, b) => a.date - b.date);
 
-      if (runningTotal <= 0) return false;
+    let sum = budget.sum;
+
+    for (const event of events) {
+      sum += event.amount;
+      if (sum < 0) return false;
     }
 
     return true;
@@ -443,9 +442,15 @@ class BudgetServiceUtils {
     }
   }
 
-  getAvailableSpendingLimits(budget, expenses, incomes) {
+  getAvailableSpendingLimits(
+    budget,
+    expenses,
+    incomes,
+    options = { date: new Date(), excludeId: null }
+  ) {
     const result = {};
     const MAX_CEIL = 1_000_000;
+    const { excludeId, date } = options;
 
     for (const frequency of FREQUENCIES) {
       let low = 0;
@@ -455,18 +460,22 @@ class BudgetServiceUtils {
       while (low <= high) {
         const mid = Math.floor((low + high) / 2);
 
-        // Добавим "виртуальный" расход с этой суммой и текущей частотой
-        const simulatedExpenses = cloneDeep(expenses).concat([
+        // Виртуальный расход начинается с переданной даты
+        const simulatedExpenses = cloneDeep(
+          excludeId
+            ? expenses.filter((e) => e._id?.toString() !== excludeId)
+            : expenses
+        ).concat([
           {
             amount: mid,
             frequency,
-            date: new Date(),
+            date, // используется единая дата
           },
         ]);
 
         const isHealthy = this.simulateBudgetHealth(
           budget,
-          incomes.filter((income) => income.frequency !== "once"),
+          incomes.filter((i) => i.frequency !== "once"),
           simulatedExpenses
         );
 
@@ -480,7 +489,7 @@ class BudgetServiceUtils {
 
       result[frequency] = best;
     }
-    console.log({ sum: budget.sum, expenses, incomes, result });
+
     return result;
   }
 }

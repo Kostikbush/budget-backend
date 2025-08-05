@@ -24,6 +24,16 @@ const expenseHistorySchema = new mongoose.Schema({
   type: { type: String, enum: ["expense", "goal"], default: "expense" },
 });
 
+expenseHistorySchema.index(
+  { entityId: 1, date: 1 },
+  {
+    unique: true,
+    partialFilterExpression: {
+      entityId: { $type: "objectId" }, // или просто { $exists: true }
+    },
+  }
+);
+
 export const ExpenseHistoryModel = mongoose.model(
   "ExpenseHistory",
   expenseHistorySchema,

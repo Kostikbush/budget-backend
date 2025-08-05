@@ -44,7 +44,7 @@ class BudgetController {
       const result = await budgetService.history({
         userId: userId,
         after: after ? new Date(after) : undefined,
-        limit: Number(limit) || 20,
+        limit: limit || 10,
         type: type || "all",
       });
 
@@ -82,7 +82,7 @@ class BudgetController {
 
   async getAvailableSpendingLimits(req, res) {
     try {
-      const { userId } = req.query;
+      const { userId, date, excludeId } = req.query;
 
       if (!userId) {
         res.json({ message: "Не передан id пользователя", type: "error" });
@@ -94,7 +94,11 @@ class BudgetController {
         return;
       }
 
-      const limits = await budgetService.getAvailableSpendingLimits(userId);
+      const limits = await budgetService.getAvailableSpendingLimits(
+        userId,
+        date,
+        excludeId
+      );
 
       res.json(limits);
     } catch (e) {

@@ -1,4 +1,4 @@
-import { isToday } from "date-fns";
+import { addDays, addMonths, addWeeks, addYears, isToday } from "date-fns";
 import { GoalModel } from "../models/goal.js";
 import { budgetService, budgetServiceUtils } from "./budget-service.js";
 import { expenseHistoryService } from "./expense-history-service.js";
@@ -163,9 +163,8 @@ class GoalService {
 
     return { type: "success" };
   }
-  async updateGoal(userId, goalData) {
+  async updateGoal(userId, goalId, goalData) {
     const {
-      goalId,
       title,
       targetAmount,
       currentAmount,
@@ -178,6 +177,8 @@ class GoalService {
       await budgetService.getBudgetDetails(userId);
     const sum = budget.sum;
     const budgetId = budget._id.toJSON();
+
+    const currentGoal = goals.find((goal) => goal._id.toString() === goalId);
 
     const today = isToday(dayOfMoneyWriteOff);
 
@@ -200,6 +201,24 @@ class GoalService {
     if (!isHealthy) {
       throw new Error("При трате на эту цель бюджет уйдет в минус");
     }
+
+    console.log(
+      "CALC_END_DATE",
+      {
+        currentAmount,
+        targetAmount,
+        amountPerStep: amount,
+        frequency,
+        startDate: dayOfMoneyWriteOff,
+      },
+      this.calculateGoalEndDate({
+        currentAmount,
+        targetAmount,
+        amountPerStep: amount,
+        frequency,
+        startDate: dayOfMoneyWriteOff,
+      })
+    );
 
     const updatedGoal = await GoalModel.findByIdAndUpdate(
       goalId,
@@ -282,6 +301,8 @@ class GoalService {
         userId
       );
     }
+
+    return { type: "success" };
   }
   async deleteADebitGoal(userId, goalId) {
     const budget = (await budgetService.getUserBudget(userId)).budget;
@@ -290,6 +311,7 @@ class GoalService {
     if (!goal) {
       throw new Error("Цель не найдена");
     }
+
     if (goal.budgetId.toString() !== budget._id.toString()) {
       throw new Error("Цель не принадлежит вашему бюджету");
     }

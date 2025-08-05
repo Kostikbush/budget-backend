@@ -32,9 +32,9 @@ class GoalController {
   }
   async updateGoal(req, res) {
     try {
-      const { userId, goalData } = req.body;
+      const { userId, goalData, goalId } = req.body;
 
-      const response = await goalService.updateGoal(userId, goalData);
+      const response = await goalService.updateGoal(userId, goalId, goalData);
 
       return res.json(response);
     } catch (error) {
@@ -46,7 +46,7 @@ class GoalController {
   }
   async deleteADebitGoal(req, res) {
     try {
-      const { userId, goalId } = req.query;
+      const { userId, goalId } = req.body;
 
       const response = await goalService.deleteADebitGoal(userId, goalId);
 
@@ -66,6 +66,23 @@ class GoalController {
       const response = await goalService.deductAmountFromGoalToBudget(
         goalId,
         amount
+      );
+
+      return res.json(response);
+    } catch (error) {
+      res.json({
+        message: error?.message ?? "Ошибка списания денег с цели",
+        type: "error",
+      });
+    }
+  }
+  async deleteAmountFromGoalToBudget(req, res) {
+    try {
+      const { goalId, userId } = req.body;
+
+      const response = await goalService.deleteGoalReturnMoneyBackToTheBudget(
+        userId,
+        goalId
       );
 
       return res.json(response);

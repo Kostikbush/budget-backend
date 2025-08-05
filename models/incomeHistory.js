@@ -29,6 +29,16 @@ const incomeHistorySchema = new mongoose.Schema({
   },
 });
 
+incomeHistorySchema.index(
+  { incomeId: 1, date: 1 },
+  {
+    unique: true,
+    partialFilterExpression: {
+      incomeId: { $type: "objectId" },
+    },
+  }
+);
+
 export const IncomeHistoryModel = mongoose.model(
   "IncomeHistory",
   incomeHistorySchema,

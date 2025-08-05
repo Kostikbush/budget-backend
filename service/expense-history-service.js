@@ -14,27 +14,55 @@ class ExpenseHistoryService {
       date = new Date(),
       type = "expense",
     } = expenseData;
+
+    if (entityId) {
+      const expenseInHistory = await ExpenseHistoryModel.findOne({
+        entityId,
+      }).sort({ date: -1 });
+
+      if (expenseInHistory) {
+        const date = expenseInHistory.date;
+
+        if (isToday(new Date(date))) {
+          return { type: "success" };
+        }
+      }
+    }
+    console.log("-------------", { expenseData }, "================");
     const budget = (await budgetService.getUserBudget(userId)).budget;
 
-    budget.sum -= amount;
+    try {
+      await ExpenseHistoryModel.create({
+        title,
+        amount,
+        budgetId: budget._id.toString(),
+        comment,
+        date,
+        entityId,
+        userId,
+        frequency,
+        priority,
+        scope,
+        type,
+      });
 
-    await budget.save();
+      budget.sum -= amount;
 
-    await ExpenseHistoryModel.create({
-      title,
-      amount,
-      budgetId: budget._id.toString(),
-      comment,
-      date,
-      entityId,
-      userId,
-      frequency,
-      priority,
-      scope,
-      type,
-    });
+      await budget.save();
 
-    return { type: "success" };
+      return { type: "success" };
+    } catch (error) {
+      if (
+        error.code === 11000 &&
+        error.message.includes("entityId") &&
+        error.message.includes("date")
+      ) {
+        return { type: "success" };
+      }
+
+      // иначе пробрасываем ошибку
+      throw new Error(error);
+    }
   }
 
   async updateExpenseHistory(userId, expenseData) {
