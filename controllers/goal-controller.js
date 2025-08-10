@@ -65,7 +65,7 @@ class GoalController {
 
       const response = await goalService.deductAmountFromGoalToBudget(
         goalId,
-        amount
+        amount,
       );
 
       return res.json(response);
@@ -82,7 +82,7 @@ class GoalController {
 
       const response = await goalService.deleteGoalReturnMoneyBackToTheBudget(
         userId,
-        goalId
+        goalId,
       );
 
       return res.json(response);

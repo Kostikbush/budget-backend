@@ -58,7 +58,7 @@ export async function budgetSyncMiddleware(req, res, next) {
 
       currentDate = budgetServiceUtils.getNextDateFromFrequency(
         currentDate,
-        income.frequency
+        income.frequency,
       );
     }
 
@@ -91,7 +91,7 @@ export async function budgetSyncMiddleware(req, res, next) {
 
       currentDate = budgetServiceUtils.getNextDateFromFrequency(
         currentDate,
-        expense.frequency
+        expense.frequency,
       );
     }
 
@@ -107,7 +107,7 @@ export async function budgetSyncMiddleware(req, res, next) {
       "IF",
       isBefore(currentDate, today),
       isSameDay(currentDate, today),
-      goal.isCompleted
+      goal.isCompleted,
     );
     while (
       (isBefore(currentDate, today) || isSameDay(currentDate, today)) &&
@@ -159,7 +159,7 @@ export async function budgetSyncMiddleware(req, res, next) {
       console.log("operations PUSHS");
       currentDate = budgetServiceUtils.getNextDateFromFrequency(
         currentDate,
-        goal.frequency
+        goal.frequency,
       );
     }
 

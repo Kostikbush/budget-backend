@@ -48,7 +48,7 @@ class GoalService {
       const isHealthy = budgetServiceUtils.simulateBudgetHealth(
         { sum: sum - amount },
         incomes,
-        allExpenses
+        allExpenses,
       );
 
       if (!isHealthy) {
@@ -69,7 +69,7 @@ class GoalService {
           title,
           type: "goal",
         },
-        userId
+        userId,
       );
 
       await GoalModel.create({
@@ -98,7 +98,7 @@ class GoalService {
     const isHealthy = budgetServiceUtils.simulateBudgetHealth(
       { sum },
       incomes,
-      allExpenses.concat([{ amount, date: dayOfMoneyWriteOff, frequency }])
+      allExpenses.concat([{ amount, date: dayOfMoneyWriteOff, frequency }]),
     );
 
     if (!isHealthy) {
@@ -150,12 +150,12 @@ class GoalService {
           title,
           type: "goal",
         },
-        userId
+        userId,
       );
 
-      newGoal.dayOfMoneyWriteOff = budget.getNextDateFromFrequency(
+      newGoal.dayOfMoneyWriteOff = budgetServiceUtils.getNextDateFromFrequency(
         newGoal.dayOfMoneyWriteOff,
-        newGoal.frequency
+        newGoal.frequency,
       );
 
       await newGoal.save();
@@ -195,7 +195,7 @@ class GoalService {
         }
 
         return expense;
-      })
+      }),
     );
 
     if (!isHealthy) {
@@ -217,7 +217,7 @@ class GoalService {
         amountPerStep: amount,
         frequency,
         startDate: dayOfMoneyWriteOff,
-      })
+      }),
     );
 
     const updatedGoal = await GoalModel.findByIdAndUpdate(
@@ -240,7 +240,7 @@ class GoalService {
         isCompleted: false,
         targetAmount,
       },
-      { new: true }
+      { new: true },
     );
 
     if (today) {
@@ -275,12 +275,12 @@ class GoalService {
             frequency,
             title,
           },
-          userId
+          userId,
         );
 
         updatedGoal.dayOfMoneyWriteOff = budget.getNextDateFromFrequency(
           updatedGoal.dayOfMoneyWriteOff,
-          updatedGoal.frequency
+          updatedGoal.frequency,
         );
 
         await updatedGoal.save();
@@ -298,7 +298,7 @@ class GoalService {
           title,
           type: "goal",
         },
-        userId
+        userId,
       );
     }
 
@@ -341,7 +341,7 @@ class GoalService {
         incomeId: null,
         frequency: goal.frequency,
       },
-      userId
+      userId,
     );
 
     await GoalModel.findByIdAndDelete(goalId);
@@ -366,7 +366,7 @@ class GoalService {
         incomeId: null,
         frequency: goal.frequency,
       },
-      goal.userId
+      goal.userId,
     );
 
     await goal.save();

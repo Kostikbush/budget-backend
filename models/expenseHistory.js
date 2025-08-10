@@ -31,7 +31,7 @@ expenseHistorySchema.index(
     partialFilterExpression: {
       entityId: { $type: "objectId" }, // или просто { $exists: true }
     },
-  }
+  },
 );
 
 export const ExpenseHistoryModel = mongoose.model(

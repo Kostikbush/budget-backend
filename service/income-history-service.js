@@ -1,6 +1,6 @@
 import { isToday } from "date-fns";
 import { IncomeHistoryModel } from "../models/incomeHistory.js";
-import { budgetService } from "./budget-service.js";
+import { budgetService, budgetServiceUtils } from "./budget-service.js";
 
 class IncomeHistoryService {
   /**
@@ -97,10 +97,10 @@ class IncomeHistoryService {
         throw new Error("Недостаточно средств в бюджете");
       }
 
-      const isHealthy = budgetService.simulateBudgetHealth(
+      const isHealthy = budgetServiceUtils.simulateBudgetHealth(
         budget,
         incomes,
-        allExpenses
+        allExpenses,
       );
 
       if (!isHealthy) {
@@ -116,7 +116,7 @@ class IncomeHistoryService {
         $set: {
           amount,
         },
-      }
+      },
     );
 
     return { type: "success" };
@@ -140,10 +140,10 @@ class IncomeHistoryService {
       throw new Error("Недостаточно средств в бюджете");
     }
 
-    const isHealthy = budgetService.simulateBudgetHealth(
+    const isHealthy = budgetServiceUtils.simulateBudgetHealth(
       budget,
       incomes,
-      allExpenses
+      allExpenses,
     );
 
     if (!isHealthy) {

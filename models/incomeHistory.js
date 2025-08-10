@@ -36,7 +36,7 @@ incomeHistorySchema.index(
     partialFilterExpression: {
       incomeId: { $type: "objectId" },
     },
-  }
+  },
 );
 
 export const IncomeHistoryModel = mongoose.model(

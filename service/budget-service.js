@@ -39,15 +39,14 @@ import { incomeService } from "./income-service.js";
  */
 class BudgetService {
   async getAvailableSpendingLimits(userId, date, excludeId = null) {
-    const { budget, allExpenses, incomes } = await this.getBudgetDetails(
-      userId
-    );
+    const { budget, allExpenses, incomes } =
+      await this.getBudgetDetails(userId);
 
     const response = budgetServiceUtils.getAvailableSpendingLimits(
       budget,
       allExpenses,
       incomes,
-      { date: new Date(date), excludeId }
+      { date: new Date(date), excludeId },
     );
 
     return {
@@ -89,7 +88,7 @@ class BudgetService {
         userId,
         memberId,
         TypeNotification.invitation,
-        "Вас приглашают в бюджет"
+        "Вас приглашают в бюджет",
       );
     }
 
@@ -137,7 +136,7 @@ class BudgetService {
     const updatedBudget = await BudgetModel.findByIdAndUpdate(
       budgetId,
       { $push: { invited: invitee._id } },
-      { new: true }
+      { new: true },
     );
 
     // Создаем уведомление о приглашении
@@ -145,7 +144,7 @@ class BudgetService {
       invitee._id,
       "invitation",
       budgetId,
-      `Вас пригласили присоединиться к бюджету "${budget.name}"`
+      `Вас пригласили присоединиться к бюджету "${budget.name}"`,
     );
 
     return { updatedBudget, type: "success" };
@@ -204,7 +203,7 @@ class BudgetService {
     // Находим бюджеты, куда пользователь приглашен
     const invitations = await BudgetModel.find({ invited: userId }).populate(
       "owner",
-      "email name"
+      "email name",
     );
     return { invitations, type: "success" };
   }
@@ -216,14 +215,14 @@ class BudgetService {
    */
   async getBudgetDetails(userId) {
     const expenses =
-      (await expenseService.getAcceptedExpenses(userId))?.expenses || [];
+      (await expenseService.getBudgetExpenses(userId))?.expenses || [];
     const budget = (await this.getUserBudget(userId))?.budget;
     const incomes =
       (await incomeService.getBudgetIncomes(userId)).incomes || [];
     const goals = ((await goalService.getActiveGoals(userId)).goals || []).map(
       (goal) => {
         return { ...goal._doc, date: goal.dayOfMoneyWriteOff };
-      }
+      },
     );
 
     return {
@@ -281,7 +280,7 @@ class BudgetService {
       {
         $pull: { participants: userId },
       },
-      { new: true }
+      { new: true },
     );
 
     // Удаляем бюджет из списка бюджетов пользователя
@@ -330,7 +329,7 @@ class BudgetService {
     }
 
     const combined = [...incomes, ...expenses].sort(
-      (a, b) => b.date.getTime() - a.date.getTime()
+      (a, b) => b.date.getTime() - a.date.getTime(),
     );
 
     return {
@@ -392,7 +391,7 @@ class BudgetServiceUtils {
 
           currentDate = this.getNextDateFromFrequency(
             currentDate,
-            item.frequency
+            item.frequency,
           );
         }
       }
@@ -446,7 +445,7 @@ class BudgetServiceUtils {
     budget,
     expenses,
     incomes,
-    options = { date: new Date(), excludeId: null }
+    options = { date: new Date(), excludeId: null },
   ) {
     const result = {};
     const MAX_CEIL = 1_000_000;
@@ -464,7 +463,7 @@ class BudgetServiceUtils {
         const simulatedExpenses = cloneDeep(
           excludeId
             ? expenses.filter((e) => e._id?.toString() !== excludeId)
-            : expenses
+            : expenses,
         ).concat([
           {
             amount: mid,
@@ -476,7 +475,7 @@ class BudgetServiceUtils {
         const isHealthy = this.simulateBudgetHealth(
           budget,
           incomes.filter((i) => i.frequency !== "once"),
-          simulatedExpenses
+          simulatedExpenses,
         );
 
         if (isHealthy) {
@@ -491,6 +490,12 @@ class BudgetServiceUtils {
     }
 
     return result;
+  }
+
+  formatNumberWithSpaces(num, startStr) {
+    const resString = num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+
+    return startStr ? `${startStr} ${resString}` : resString;
   }
 }
 

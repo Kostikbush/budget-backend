@@ -92,7 +92,7 @@ class ExpenseHistoryService {
       const isHealthy = budgetServiceUtils.simulateBudgetHealth(
         budget,
         incomes,
-        allExpenses
+        allExpenses,
       );
 
       if (!isHealthy) {
@@ -108,7 +108,7 @@ class ExpenseHistoryService {
         $set: {
           amount,
         },
-      }
+      },
     );
 
     return { type: "success" };

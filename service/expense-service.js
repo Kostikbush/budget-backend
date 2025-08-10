@@ -4,7 +4,6 @@ import { budgetService, budgetServiceUtils } from "./budget-service.js";
 import { ExpenseHistoryModel } from "../models/expenseHistory.js";
 import { expenseHistoryService } from "./expense-history-service.js";
 import { TypeNotification } from "../models/notification.js";
-import { incomeService } from "./income-service.js";
 import { isToday } from "date-fns";
 
 /**
@@ -102,12 +101,14 @@ class ExpenseService {
         userId,
         recipientId,
         TypeNotification.newExpense,
-        `Оппонент хочет добавить новый расход на ${amount}, согласны?`,
+        `Оппонент хочет добавить новый расход на ${budgetServiceUtils.formatNumberWithSpaces(
+          amount,
+        )}, согласны?`,
         expense._id,
       );
     }
 
-    if (isToday(isTodayExpense)) {
+    if (isTodayExpense) {
       await expenseHistoryService.create(
         {
           amount,

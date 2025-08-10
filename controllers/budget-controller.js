@@ -18,7 +18,7 @@ class BudgetController {
         "Бюджет",
         ownerId,
         startSum,
-        memberId
+        memberId,
       );
 
       res.json(result);
@@ -97,7 +97,7 @@ class BudgetController {
       const limits = await budgetService.getAvailableSpendingLimits(
         userId,
         date,
-        excludeId
+        excludeId,
       );
 
       res.json(limits);
@@ -120,7 +120,7 @@ class BudgetController {
 
       const result = await incomeHistoryService.updateIncomeHistory(
         userId,
-        incomeData
+        incomeData,
       );
 
       return res.json(result);
@@ -142,7 +142,7 @@ class BudgetController {
 
       const result = await incomeHistoryService.deleteIncomeHistory(
         incomeHistoryId,
-        userId
+        userId,
       );
 
       return res.json(result);
@@ -165,7 +165,7 @@ class BudgetController {
 
       const result = await expenseHistoryService.updateExpenseHistory(
         userId,
-        expenseData
+        expenseData,
       );
 
       return res.json(result);
@@ -185,9 +185,8 @@ class BudgetController {
         return res.json({ message: "Недостаточно данных", type: "error" });
       }
 
-      const result = await expenseHistoryService.deleteExpenseHistory(
-        expenseHistoryId
-      );
+      const result =
+        await expenseHistoryService.deleteExpenseHistory(expenseHistoryId);
 
       return res.json(result);
     } catch (error) {

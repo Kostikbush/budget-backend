@@ -36,7 +36,7 @@ class IncomeService {
           amount,
           frequency,
         },
-        userId
+        userId,
       );
 
       return { type: "success" };
@@ -49,7 +49,7 @@ class IncomeService {
           amount,
           frequency,
         },
-        userId
+        userId,
       );
 
       nextDate = budgetServiceUtils.getNextDateFromFrequency(date, frequency);
@@ -83,14 +83,14 @@ class IncomeService {
     if (!budget) throw new Error("Бюджет не найден");
 
     const newIncomes = incomes.filter(
-      (income) => income._id.toString() !== incomeId
+      (income) => income._id.toString() !== incomeId,
     );
 
     if (
       !budgetServiceUtils.simulateBudgetHealth(budget, newIncomes, allExpenses)
     ) {
       throw new Error(
-        "Удаляя доход бюджет уйдет в минус через некоторое время!"
+        "Удаляя доход бюджет уйдет в минус через некоторое время!",
       );
     }
 
@@ -144,7 +144,7 @@ class IncomeService {
           amount,
         },
         budgetId,
-        income.userId.toString()
+        income.userId.toString(),
       );
 
       return {
@@ -168,11 +168,11 @@ class IncomeService {
 
           return inc;
         }),
-        allExpenses
+        allExpenses,
       )
     ) {
       throw new Error(
-        "Изменяя доход бюджет уйдет в минус через некоторое время!"
+        "Изменяя доход бюджет уйдет в минус через некоторое время!",
       );
     }
 
@@ -190,7 +190,7 @@ class IncomeService {
             amount,
             frequency,
           },
-          income.userId.toString()
+          income.userId.toString(),
         );
       }
     }
@@ -204,7 +204,7 @@ class IncomeService {
         frequency: frequency,
         date: nextDate,
       },
-      { new: true }
+      { new: true },
     );
 
     return { updatedIncome, type: "success" };
