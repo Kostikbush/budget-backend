@@ -1,3 +1,4 @@
+import { isToday } from "date-fns";
 import { ExpenseHistoryModel } from "../models/expenseHistory.js";
 import { budgetService, budgetServiceUtils } from "./budget-service.js";
 
@@ -28,7 +29,7 @@ class ExpenseHistoryService {
         }
       }
     }
-    console.log("-------------", { expenseData }, "================");
+
     const budget = (await budgetService.getUserBudget(userId)).budget;
 
     try {
@@ -78,9 +79,8 @@ class ExpenseHistoryService {
     }
 
     if (amount <= expenseHistoryItem.amount) {
-      console.log(expenseHistoryItem.amount - amount);
       budget.sum += expenseHistoryItem.amount - amount;
-      console.log(budget.sum);
+
       await budget.save();
     } else if (amount > expenseHistoryItem.amount) {
       budget.sum -= amount - expenseHistoryItem.amount;
@@ -92,7 +92,7 @@ class ExpenseHistoryService {
       const isHealthy = budgetServiceUtils.simulateBudgetHealth(
         budget,
         incomes,
-        allExpenses,
+        allExpenses
       );
 
       if (!isHealthy) {
@@ -108,7 +108,7 @@ class ExpenseHistoryService {
         $set: {
           amount,
         },
-      },
+      }
     );
 
     return { type: "success" };

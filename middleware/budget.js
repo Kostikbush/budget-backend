@@ -103,22 +103,17 @@ export async function budgetSyncMiddleware(req, res, next) {
 
   for (const goal of goals) {
     let currentDate = startOfDay(new Date(goal.dayOfMoneyWriteOff));
-    console.log(
-      "IF",
-      isBefore(currentDate, today),
-      isSameDay(currentDate, today),
-      goal.isCompleted,
-    );
+
     while (
       (isBefore(currentDate, today) || isSameDay(currentDate, today)) &&
       !goal.isCompleted
     ) {
       goal.currentAmount += goal.amount;
-      console.log("NO_COMPLETE");
+
       if (goal.currentAmount >= goal.targetAmount) {
         // Сколько "лишнего" зашло сверх цели
         const overflow = goal.currentAmount - goal.targetAmount;
-        console.log("OVERFLOW");
+
         // Добавим корректную сумму, чтобы цель дошла только до target
         operations.push({
           type: "expense",
@@ -156,10 +151,10 @@ export async function budgetSyncMiddleware(req, res, next) {
           type: "goal",
         },
       });
-      console.log("operations PUSHS");
+
       currentDate = budgetServiceUtils.getNextDateFromFrequency(
         currentDate,
-        goal.frequency,
+        goal.frequency
       );
     }
 
@@ -176,12 +171,11 @@ export async function budgetSyncMiddleware(req, res, next) {
 
     await goal.save();
   }
-  console.log("-------------", { operations, goals }, "================");
+
   for (const op of operations) {
     if (op.type === "income") {
       await incomeHistoryService.create(op.data, op.data.userId);
     } else if (op.type === "expense" || op.type === "goal") {
-      console.log("-------------", op, "================");
       await expenseHistoryService.create(op.data, op.data.userId);
     }
   }

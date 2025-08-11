@@ -1,18 +1,25 @@
 import jwt from "jsonwebtoken";
 import User from "../models/user.js";
 import Token from "../models/token.js";
+import slugify from "@sindresorhus/slugify";
+import genUsername from "unique-username-generator";
+
+function nicify(name) {
+  // аккуратный базовый префикс из имени (опционально)
+  return name ? slugify(name, { decamelize: false }) : undefined;
+}
 
 const generateTokens = (user) => {
   const accessToken = jwt.sign(
     { id: user._id, email: user.email },
     process.env.JWT_ACCESS_SECRET,
-    { expiresIn: process.env.ACCESS_TOKEN_EXPIRY },
+    { expiresIn: process.env.ACCESS_TOKEN_EXPIRY }
   );
 
   const refreshToken = jwt.sign(
     { id: user._id },
     process.env.JWT_REFRESH_SECRET,
-    { expiresIn: process.env.REFRESH_TOKEN_EXPIRY },
+    { expiresIn: process.env.REFRESH_TOKEN_EXPIRY }
   );
 
   return { accessToken, refreshToken };
@@ -22,11 +29,42 @@ export const register = async (req, res) => {
   try {
     const { email, password, name } = req.body;
     const exists = await User.findOne({ email });
-    if (exists)
+
+    if (exists) {
       return res.json({
         message: "Пользователь уже существует",
         type: "error",
       });
+    }
+
+    let candidate =
+      genUsername.generateFromEmail(email, {
+        separator: "-",
+        maxLength: 20,
+        randomDigits: 2, // добавит 2 цифры на случай коллизий
+      }) || genUsername.generateUsername("", 2, 12, "-"); // fallback
+
+    // необязательный префикс из имени
+    const pref = nicify(name);
+    if (pref) {
+      candidate = `${pref}-${candidate}`.toLowerCase();
+    }
+
+    // 2) проверка уникальности
+    let existsNickName = await User.exists({
+      nickname: candidate.toLowerCase(),
+    });
+
+    let tries = 0;
+
+    while (existsNickName && tries < 5) {
+      // добьём ещё цифры
+      candidate = genUsername.generateUsername(candidate, 0, 24, "-");
+      existsNickName = await User.exists({
+        nickname: candidate.toLowerCase(),
+      });
+      tries++;
+    }
 
     const user = await User.create({ email, password, name });
     const { accessToken, refreshToken } = generateTokens(user);
@@ -60,7 +98,7 @@ export const login = async (req, res) => {
       token: refreshToken,
       expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
     });
-    console.log("user", user);
+
     res.json({ accessToken, refreshToken, user });
   } catch (err) {
     res.json({ message: "Ошибка входа", type: "error" });

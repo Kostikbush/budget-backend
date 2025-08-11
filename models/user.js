@@ -5,6 +5,7 @@ const userSchema = new mongoose.Schema({
   email: { type: String, required: true, unique: true },
   name: { type: String, required: true },
   password: String,
+  nickname: { type: String, required: true },
   budgets: [{ type: mongoose.Schema.Types.ObjectId, ref: "Budget" }],
 });
 
@@ -19,5 +20,10 @@ userSchema.pre("save", async function (next) {
 userSchema.methods.comparePassword = function (candidate) {
   return bcrypt.compare(candidate, this.password);
 };
+
+userSchema.index(
+  { nickname: 1 },
+  { unique: true, collation: { locale: "en", strength: 2 } }
+);
 
 export default mongoose.model("User", userSchema);

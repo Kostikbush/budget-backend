@@ -98,7 +98,7 @@ class ExpenseController {
       const { expenseId } = req.query;
 
       const response = await expenseService.acceptExpense(expenseId);
-      console.log({ response });
+
       return res.json(response);
     } catch (error) {
       res.json({
@@ -113,7 +113,7 @@ class ExpenseController {
       const { expenseId } = req.query;
 
       const response = await expenseService.rejectExpense(expenseId);
-      console.log({ response });
+
       return res.json(response);
     } catch (error) {
       res.json({

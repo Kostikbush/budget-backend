@@ -47,6 +47,8 @@ class ExpenseService {
       date,
     } = expenseData;
 
+    let newDate = new Date(date);
+
     const { budget, allExpenses, incomes } =
       await budgetService.getBudgetDetails(userId);
     const budgetId = budget._id.toString();
@@ -64,7 +66,7 @@ class ExpenseService {
     const isHealthy = budgetServiceUtils.simulateBudgetHealth(
       budget,
       incomes,
-      simulatedExpenses,
+      simulatedExpenses
     );
 
     if (!isHealthy) {
@@ -74,7 +76,7 @@ class ExpenseService {
     if (isOnce) {
       const response = await expenseHistoryService.create(
         { amount, comment, entityId: null, priority, scope, frequency, title },
-        userId,
+        userId
       );
 
       return response;
@@ -90,7 +92,7 @@ class ExpenseService {
       frequency,
       priority,
       scope,
-      date: budgetServiceUtils.getNextDateFromFrequency(date, frequency),
+      date: newDate, // budgetServiceUtils.getNextDateFromFrequency(date, frequency),
       confirmed: recipientId ? false : true,
       createdAt: new Date(),
       comment,
@@ -121,6 +123,13 @@ class ExpenseService {
         },
         userId,
       );
+
+      expense.date = budgetServiceUtils.getNextDateFromFrequency(
+        date,
+        frequency
+      );
+
+      await expense.save();
     }
 
     return {
@@ -165,6 +174,7 @@ class ExpenseService {
       scope = "personal",
       date,
     } = expenseData;
+    let newDate = new Date(date);
 
     const expense = await ExpenseModel.findById(expenseId);
     const { budget, allExpenses, goals, incomes } =
@@ -187,13 +197,13 @@ class ExpenseService {
       }
 
       const simulatedExpenses = allExpenses.filter(
-        (exp) => exp._id.toString() !== expenseId,
+        (exp) => exp._id.toString() !== expenseId
       );
 
       const isHealthy = budgetServiceUtils.simulateBudgetHealth(
         budget,
         incomes,
-        simulatedExpenses,
+        simulatedExpenses
       );
 
       if (!isHealthy) {
@@ -210,7 +220,7 @@ class ExpenseService {
           frequency,
           title,
         },
-        userId,
+        userId
       );
 
       await notificationService.delete(expenseId);
@@ -223,7 +233,7 @@ class ExpenseService {
     }
 
     const simulatedExpenses = [
-      allExpenses.map((exp) => {
+      ...allExpenses.map((exp) => {
         if (exp._id.toString() === expenseId) {
           return {
             ...exp,
@@ -241,14 +251,15 @@ class ExpenseService {
     const isHealthy = budgetServiceUtils.simulateBudgetHealth(
       budget,
       incomes,
-      simulatedExpenses,
+      simulatedExpenses
     );
 
     if (!isHealthy) {
       throw new Error("В бюджете нет средств на этот расход");
     }
 
-    if (isToday(date) || frequency === "daily") {
+    if (isToday(date)) {
+      newDate = budgetServiceUtils.getNextDateFromFrequency(date, frequency);
       if (budgetAmount - amount < 0) {
         throw new Error("В бюджете нет средств на этот расход");
       }
@@ -257,7 +268,7 @@ class ExpenseService {
         .sort({ date: -1 }) // Последняя по дате
         .lean(); // ускоряет, если не нужно работать с mongoose-документом
 
-      if (!isToday(new Date(lastHistory.date))) {
+      if (!isToday(new Date(lastHistory?.date ?? ""))) {
         await expenseHistoryService.create(
           {
             amount,
@@ -268,7 +279,7 @@ class ExpenseService {
             frequency,
             title,
           },
-          userId,
+          userId
         );
       }
     }
@@ -276,7 +287,7 @@ class ExpenseService {
     await ExpenseModel.findByIdAndUpdate(expense._id, {
       amount,
       comment,
-      date: budgetServiceUtils.getNextDateFromFrequency(date, frequency),
+      date: newDate,
       frequency,
       priority,
       scope,

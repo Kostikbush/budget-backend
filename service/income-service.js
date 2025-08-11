@@ -23,7 +23,7 @@ class IncomeService {
   async createIncome(incomeData, userId) {
     const { title, amount, frequency = "once", date } = incomeData;
 
-    let nextDate = date;
+    let nextDate = new Date(date);
 
     const budget = (await budgetService.getUserBudget(userId)).budget;
 
@@ -129,7 +129,7 @@ class IncomeService {
     // Находим доход
     const income = await IncomeModel.findById(incomeId);
     const budgetId = income.budgetId._id.toString();
-    let nextDate = date;
+    let nextDate = new Date(date);
 
     if (!income) {
       throw new Error("Доход не найден");

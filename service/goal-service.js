@@ -3,6 +3,7 @@ import { GoalModel } from "../models/goal.js";
 import { budgetService, budgetServiceUtils } from "./budget-service.js";
 import { expenseHistoryService } from "./expense-history-service.js";
 import { incomeHistoryService } from "./income-history-service.js";
+import { ExpenseHistoryModel } from "../models/expenseHistory.js";
 
 class GoalService {
   async getGoals(userId) {
@@ -48,7 +49,7 @@ class GoalService {
       const isHealthy = budgetServiceUtils.simulateBudgetHealth(
         { sum: sum - amount },
         incomes,
-        allExpenses,
+        allExpenses
       );
 
       if (!isHealthy) {
@@ -69,7 +70,7 @@ class GoalService {
           title,
           type: "goal",
         },
-        userId,
+        userId
       );
 
       await GoalModel.create({
@@ -98,7 +99,7 @@ class GoalService {
     const isHealthy = budgetServiceUtils.simulateBudgetHealth(
       { sum },
       incomes,
-      allExpenses.concat([{ amount, date: dayOfMoneyWriteOff, frequency }]),
+      allExpenses.concat([{ amount, date: dayOfMoneyWriteOff, frequency }])
     );
 
     if (!isHealthy) {
@@ -150,12 +151,12 @@ class GoalService {
           title,
           type: "goal",
         },
-        userId,
+        userId
       );
 
       newGoal.dayOfMoneyWriteOff = budgetServiceUtils.getNextDateFromFrequency(
         newGoal.dayOfMoneyWriteOff,
-        newGoal.frequency,
+        newGoal.frequency
       );
 
       await newGoal.save();
@@ -173,12 +174,10 @@ class GoalService {
       dayOfMoneyWriteOff,
     } = goalData;
 
-    const { allExpenses, budget, incomes, goals } =
+    const { allExpenses, budget, incomes } =
       await budgetService.getBudgetDetails(userId);
     const sum = budget.sum;
     const budgetId = budget._id.toJSON();
-
-    const currentGoal = goals.find((goal) => goal._id.toString() === goalId);
 
     const today = isToday(dayOfMoneyWriteOff);
 
@@ -195,30 +194,12 @@ class GoalService {
         }
 
         return expense;
-      }),
+      })
     );
 
     if (!isHealthy) {
       throw new Error("При трате на эту цель бюджет уйдет в минус");
     }
-
-    console.log(
-      "CALC_END_DATE",
-      {
-        currentAmount,
-        targetAmount,
-        amountPerStep: amount,
-        frequency,
-        startDate: dayOfMoneyWriteOff,
-      },
-      this.calculateGoalEndDate({
-        currentAmount,
-        targetAmount,
-        amountPerStep: amount,
-        frequency,
-        startDate: dayOfMoneyWriteOff,
-      }),
-    );
 
     const updatedGoal = await GoalModel.findByIdAndUpdate(
       goalId,
@@ -240,7 +221,7 @@ class GoalService {
         isCompleted: false,
         targetAmount,
       },
-      { new: true },
+      { new: true }
     );
 
     if (today) {
@@ -264,24 +245,25 @@ class GoalService {
         .sort({ date: -1 }) // Последняя по дате
         .lean(); // ускоряет, если не нужно работать с mongoose-документом
 
-      if (!isToday(new Date(lastHistory.date))) {
+      if (!lastHistory || !isToday(new Date(lastHistory?.date))) {
         await expenseHistoryService.create(
           {
             amount: minusSum,
-            comment,
             entityId: goalId,
-            priority,
-            scope,
+            priority: 1,
+            scope: "shared",
             frequency,
             title,
+            type: "goal",
           },
-          userId,
+          userId
         );
 
-        updatedGoal.dayOfMoneyWriteOff = budget.getNextDateFromFrequency(
-          updatedGoal.dayOfMoneyWriteOff,
-          updatedGoal.frequency,
-        );
+        updatedGoal.dayOfMoneyWriteOff =
+          budgetServiceUtils.getNextDateFromFrequency(
+            updatedGoal.dayOfMoneyWriteOff,
+            updatedGoal.frequency
+          );
 
         await updatedGoal.save();
 
@@ -298,8 +280,16 @@ class GoalService {
           title,
           type: "goal",
         },
-        userId,
+        userId
       );
+
+      updatedGoal.dayOfMoneyWriteOff =
+        budgetServiceUtils.getNextDateFromFrequency(
+          updatedGoal.dayOfMoneyWriteOff,
+          updatedGoal.frequency
+        );
+
+      await updatedGoal.save();
     }
 
     return { type: "success" };
@@ -341,7 +331,7 @@ class GoalService {
         incomeId: null,
         frequency: goal.frequency,
       },
-      userId,
+      userId
     );
 
     await GoalModel.findByIdAndDelete(goalId);
@@ -366,7 +356,7 @@ class GoalService {
         incomeId: null,
         frequency: goal.frequency,
       },
-      goal.userId,
+      goal.userId
     );
 
     await goal.save();

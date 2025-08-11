@@ -30,10 +30,6 @@ app.use(morgan("dev"));
 app.use(cookieParser());
 app.use(cors());
 app.use("/api", router);
-app.use((req, res, next) => {
-  console.log(`[${new Date().toISOString()}] ${req.method} ${req.originalUrl}`);
-  next();
-});
 
 const start = async () => {
   try {

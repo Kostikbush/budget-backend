@@ -48,9 +48,15 @@ class UserService {
       ? { email: { $regex: searchQuery, $options: "i" } }
       : {};
 
-    return await UserModel.find({ budgets: { $size: 0 }, ...query })
-      .limit(limit)
-      .exec();
+    return (
+      await UserModel.find({ budgets: { $size: 0 }, ...query })
+        .limit(limit)
+        .exec()
+    ).map((user) => ({
+      _id: user._id,
+      name: user.name,
+      nickname: user.nickname,
+    }));
   }
 }
 
