@@ -35,6 +35,7 @@ export async function budgetSyncMiddleware(req, res, next) {
     GoalModel.find({ budgetId: budget._id, isCompleted: false }),
   ]);
 
+  console.log({ expenses }, "FINDED_EXPENSEs");
   // Обновляем бюджет
 
   const operations = [];
@@ -58,7 +59,7 @@ export async function budgetSyncMiddleware(req, res, next) {
 
       currentDate = budgetServiceUtils.getNextDateFromFrequency(
         currentDate,
-        income.frequency,
+        income.frequency
       );
     }
 
@@ -72,6 +73,7 @@ export async function budgetSyncMiddleware(req, res, next) {
     let currentDate = startOfDay(new Date(expense.date));
 
     while (isBefore(currentDate, today) || isSameDay(currentDate, today)) {
+      console.log({ expense }, "UPDATE_PUSHES_EXPENSe");
       operations.push({
         type: "expense",
         data: {
@@ -91,7 +93,7 @@ export async function budgetSyncMiddleware(req, res, next) {
 
       currentDate = budgetServiceUtils.getNextDateFromFrequency(
         currentDate,
-        expense.frequency,
+        expense.frequency
       );
     }
 

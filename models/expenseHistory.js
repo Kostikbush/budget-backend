@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { categories } from "./expense.js";
 
 const expenseHistorySchema = new mongoose.Schema({
   entityId: {
@@ -22,6 +23,7 @@ const expenseHistorySchema = new mongoose.Schema({
   scope: { type: String, enum: ["personal", "shared"], default: "personal" },
   title: { type: String, required: true },
   type: { type: String, enum: ["expense", "goal"], default: "expense" },
+  category: { type: [String], enum: categories },
 });
 
 expenseHistorySchema.index(

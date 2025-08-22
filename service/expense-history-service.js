@@ -14,6 +14,7 @@ class ExpenseHistoryService {
       title,
       date = new Date(),
       type = "expense",
+      category = [],
     } = expenseData;
 
     if (entityId) {
@@ -45,6 +46,7 @@ class ExpenseHistoryService {
         priority,
         scope,
         type,
+        category,
       });
 
       budget.sum -= amount;

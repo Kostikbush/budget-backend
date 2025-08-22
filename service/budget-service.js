@@ -12,9 +12,7 @@ import {
   addYears,
   isValid,
   parseISO,
-  startOfMonth,
   isBefore,
-  differenceInMonths,
   startOfDay,
   isAfter,
 } from "date-fns";
@@ -38,15 +36,32 @@ import { incomeService } from "./income-service.js";
  * Сервис для работы с бюджетами
  */
 class BudgetService {
+  async getUsersInBudget(userId) {
+    const budget = (await this.getUserBudget(user)).budget;
+
+    const user = await UserModel.findById(userId);
+
+    const users = [{ nickname: user.nickname, name: user.name }];
+
+    for (const id of budget.members) {
+      const findedUser = await UserModel.findById(id.user._id.toString());
+
+      users.push(findedUser);
+    }
+
+    return users;
+  }
+
   async getAvailableSpendingLimits(userId, date, excludeId = null) {
-    const { budget, allExpenses, incomes } =
-      await this.getBudgetDetails(userId);
+    const { budget, allExpenses, incomes } = await this.getBudgetDetails(
+      userId
+    );
 
     const response = budgetServiceUtils.getAvailableSpendingLimits(
       budget,
       allExpenses,
       incomes,
-      { date: new Date(date), excludeId },
+      { date: new Date(date), excludeId }
     );
 
     return {
@@ -88,7 +103,7 @@ class BudgetService {
         userId,
         memberId,
         TypeNotification.invitation,
-        "Вас приглашают в бюджет",
+        "Вас приглашают в бюджет"
       );
     }
 
@@ -136,7 +151,7 @@ class BudgetService {
     const updatedBudget = await BudgetModel.findByIdAndUpdate(
       budgetId,
       { $push: { invited: invitee._id } },
-      { new: true },
+      { new: true }
     );
 
     // Создаем уведомление о приглашении
@@ -144,7 +159,7 @@ class BudgetService {
       invitee._id,
       "invitation",
       budgetId,
-      `Вас пригласили присоединиться к бюджету "${budget.name}"`,
+      `Вас пригласили присоединиться к бюджету "${budget.name}"`
     );
 
     return { updatedBudget, type: "success" };
@@ -203,7 +218,7 @@ class BudgetService {
     // Находим бюджеты, куда пользователь приглашен
     const invitations = await BudgetModel.find({ invited: userId }).populate(
       "owner",
-      "email name",
+      "email name"
     );
     return { invitations, type: "success" };
   }
@@ -222,7 +237,7 @@ class BudgetService {
     const goals = ((await goalService.getActiveGoals(userId)).goals || []).map(
       (goal) => {
         return { ...goal._doc, date: goal.dayOfMoneyWriteOff };
-      },
+      }
     );
 
     return {
@@ -280,7 +295,7 @@ class BudgetService {
       {
         $pull: { participants: userId },
       },
-      { new: true },
+      { new: true }
     );
 
     // Удаляем бюджет из списка бюджетов пользователя
@@ -302,42 +317,66 @@ class BudgetService {
 
     const budgetId = budget._id.toString();
     const dateFilter = after ? { date: { $lt: new Date(after) } } : {};
-    const calcLimit = type === "all" ? Math.floor(limit / 2) : limit;
-
     let incomes = [];
     let expenses = [];
     let hasMore = false;
 
-    if (type === "all" || type === "income") {
+    if (type === "all") {
       incomes = await IncomeHistoryModel.find({ budgetId, ...dateFilter })
         .sort({ date: -1 })
-        .limit(calcLimit + 1); // загружаем на 1 больше
-      if (incomes.length > calcLimit) {
-        hasMore = true;
-        incomes = incomes.slice(0, calcLimit);
-      }
-    }
-
-    if (type === "all" || type === "expense") {
+        .limit(limit + 1);
       expenses = await ExpenseHistoryModel.find({ budgetId, ...dateFilter })
         .sort({ date: -1 })
-        .limit(calcLimit + 1);
-      if (expenses.length > calcLimit) {
+        .limit(limit + 1);
+
+      let combined = [...incomes, ...expenses].sort(
+        (a, b) => b.date.getTime() - a.date.getTime()
+      );
+
+      if (combined.length > limit) {
         hasMore = true;
-        expenses = expenses.slice(0, calcLimit);
+        combined = combined.slice(0, limit);
       }
+
+      return {
+        items: combined,
+        hasMore,
+        nextCursor: combined.at(-1)?.date ?? null,
+        type: "success",
+      };
     }
 
-    const combined = [...incomes, ...expenses].sort(
-      (a, b) => b.date.getTime() - a.date.getTime(),
-    );
+    if (type === "income") {
+      incomes = await IncomeHistoryModel.find({ budgetId, ...dateFilter })
+        .sort({ date: -1 })
+        .limit(limit + 1);
+      if (incomes.length > limit) {
+        hasMore = true;
+        incomes = incomes.slice(0, limit);
+      }
+      return {
+        items: incomes,
+        hasMore,
+        nextCursor: incomes.at(-1)?.date ?? null,
+        type: "success",
+      };
+    }
 
-    return {
-      items: combined,
-      hasMore,
-      nextCursor: combined.at(-1)?.date ?? null,
-      type: "success",
-    };
+    if (type === "expense") {
+      expenses = await ExpenseHistoryModel.find({ budgetId, ...dateFilter })
+        .sort({ date: -1 })
+        .limit(limit + 1);
+      if (expenses.length > limit) {
+        hasMore = true;
+        expenses = expenses.slice(0, limit);
+      }
+      return {
+        items: expenses,
+        hasMore,
+        nextCursor: expenses.at(-1)?.date ?? null,
+        type: "success",
+      };
+    }
   }
 }
 

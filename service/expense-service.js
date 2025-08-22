@@ -45,6 +45,7 @@ class ExpenseService {
       priority = 3,
       scope = "personal",
       date,
+      category = [],
     } = expenseData;
 
     let newDate = new Date(date);
@@ -92,10 +93,11 @@ class ExpenseService {
       frequency,
       priority,
       scope,
-      date: newDate, // budgetServiceUtils.getNextDateFromFrequency(date, frequency),
+      date: newDate,
       confirmed: recipientId ? false : true,
       createdAt: new Date(),
       comment,
+      category,
     });
 
     if (recipientId) {
@@ -104,9 +106,9 @@ class ExpenseService {
         recipientId,
         TypeNotification.newExpense,
         `Оппонент хочет добавить новый расход на ${budgetServiceUtils.formatNumberWithSpaces(
-          amount,
+          amount
         )}, согласны?`,
-        expense._id,
+        expense._id
       );
     }
 
@@ -121,7 +123,7 @@ class ExpenseService {
           frequency,
           title,
         },
-        userId,
+        userId
       );
 
       expense.date = budgetServiceUtils.getNextDateFromFrequency(
@@ -173,8 +175,15 @@ class ExpenseService {
       priority = 3,
       scope = "personal",
       date,
+      category = [],
     } = expenseData;
     let newDate = new Date(date);
+
+    // Временный код
+    if (category.length > 0) {
+      await updateExpenseHistoryCategory(expenseId, category);
+    }
+    // Временный код заканчивается
 
     const expense = await ExpenseModel.findById(expenseId);
     const { budget, allExpenses, goals, incomes } =
@@ -219,6 +228,7 @@ class ExpenseService {
           scope,
           frequency,
           title,
+          category,
         },
         userId
       );
@@ -278,6 +288,7 @@ class ExpenseService {
             scope,
             frequency,
             title,
+            category,
           },
           userId
         );
@@ -292,10 +303,19 @@ class ExpenseService {
       priority,
       scope,
       title,
+      category,
     });
 
     return { type: "success" };
   }
+}
+
+// создать временную функцию чтоб обновить историю расходов добавив категорию
+async function updateExpenseHistoryCategory(expenseId, category) {
+  await ExpenseHistoryModel.updateMany(
+    { entityId: expenseId },
+    { $set: { category } }
+  );
 }
 
 export const expenseService = new ExpenseService();

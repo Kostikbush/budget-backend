@@ -4,6 +4,20 @@ import { incomeHistoryService } from "../service/income-history-service.js";
 import { expenseHistoryService } from "../service/expense-history-service.js";
 
 class BudgetController {
+  async getUsersInBudget(req, res) {
+    try {
+      const { userId } = req.query;
+
+      const response = await budgetService.getUsersInBudget(userId);
+
+      return res.json(response);
+    } catch (e) {
+      res.json({
+        message: e?.message ?? "Ошибка получения пользователей в бюджете",
+        type: "error",
+      });
+    }
+  }
   async create(req, res) {
     try {
       const { startSum, ownerId, memberId } = req.body;
@@ -18,7 +32,7 @@ class BudgetController {
         "Бюджет",
         ownerId,
         startSum,
-        memberId,
+        memberId
       );
 
       res.json(result);
@@ -97,7 +111,7 @@ class BudgetController {
       const limits = await budgetService.getAvailableSpendingLimits(
         userId,
         date,
-        excludeId,
+        excludeId
       );
 
       res.json(limits);
@@ -120,7 +134,7 @@ class BudgetController {
 
       const result = await incomeHistoryService.updateIncomeHistory(
         userId,
-        incomeData,
+        incomeData
       );
 
       return res.json(result);
@@ -142,7 +156,7 @@ class BudgetController {
 
       const result = await incomeHistoryService.deleteIncomeHistory(
         incomeHistoryId,
-        userId,
+        userId
       );
 
       return res.json(result);
@@ -165,7 +179,7 @@ class BudgetController {
 
       const result = await expenseHistoryService.updateExpenseHistory(
         userId,
-        expenseData,
+        expenseData
       );
 
       return res.json(result);
@@ -185,8 +199,9 @@ class BudgetController {
         return res.json({ message: "Недостаточно данных", type: "error" });
       }
 
-      const result =
-        await expenseHistoryService.deleteExpenseHistory(expenseHistoryId);
+      const result = await expenseHistoryService.deleteExpenseHistory(
+        expenseHistoryId
+      );
 
       return res.json(result);
     } catch (error) {
