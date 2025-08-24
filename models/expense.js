@@ -55,6 +55,11 @@ export const categories = [
   "pet_care",
   "vet",
   "other",
+  "transport_rental",
+  "body_care",
+  "housekeeping",
+  "entertainment",
+  "spa",
 ];
 
 const expenseSchema = new mongoose.Schema({
