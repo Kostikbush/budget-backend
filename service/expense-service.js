@@ -76,7 +76,16 @@ class ExpenseService {
 
     if (isOnce) {
       const response = await expenseHistoryService.create(
-        { amount, comment, entityId: null, priority, scope, frequency, title },
+        {
+          amount,
+          comment,
+          entityId: null,
+          priority,
+          scope,
+          frequency,
+          title,
+          category,
+        },
         userId
       );
 
@@ -122,6 +131,7 @@ class ExpenseService {
           scope,
           frequency,
           title,
+          category,
         },
         userId
       );
