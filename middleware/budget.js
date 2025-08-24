@@ -117,6 +117,7 @@ export async function budgetSyncMiddleware(req, res, next) {
               frequency: expense.frequency,
               scope: expense.scope,
               title: expense.title,
+              category: expense?.category ?? [],
               type: "expense",
             },
           });
