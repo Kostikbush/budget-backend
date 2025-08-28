@@ -29,9 +29,10 @@ class ExpenseService {
    */
   async getBudgetExpenses(userId) {
     const budget = (await budgetService.getUserBudget(userId)).budget;
+
     const expenses = await ExpenseModel.find({
       budgetId: budget._id.toString(),
-    });
+    }).sort({ date: 1 });
 
     return { expenses, type: "success" };
   }
