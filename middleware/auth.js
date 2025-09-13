@@ -10,7 +10,7 @@ import {
   revokeAllUserRefreshTokens,
 } from "../lib/token.js";
 import { randomBytes } from "node:crypto";
-import { allowed } from "../index.js";
+import { ALLOWED } from "../index.js";
 
 const CSRF_SAMESITE = process.env.CSRF_SAMESITE || "lax"; // для кросс-сайта нужно "none"
 const CSRF_SECURE = CSRF_SAMESITE === "none" || isProd;
@@ -110,7 +110,7 @@ export function csrfGuard(req, res, next) {
   if (["GET", "HEAD", "OPTIONS"].includes(req.method)) return next();
   const origin = req.get("Origin");
 
-  if (!origin || !allowed.has(origin)) {
+  if (!origin || !ALLOWED.has(origin)) {
     return res.status(403).json({ message: "Bad Origin", type: "error" });
   }
   const cookieToken = req.cookies?.csrf;
