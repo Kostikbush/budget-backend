@@ -1,89 +1,65 @@
-import dotenv from "dotenv";
-import express from "express";
-import cors from "cors";
-import cookieParser from "cookie-parser";
+// index.js (ESM, @vercel/node serverless entry)
 import mongoose from "mongoose";
-import morgan from "morgan";
+import app from "./app.js";
 
-import router from "./router/index.js";
-
-import { notificationMiddleware } from "./middleware/notification.js";
-import { budgetSyncMiddleware } from "./middleware/budget.js";
-import { authMiddleware, csrfGuard, setCsrfCookie } from "./middleware/auth.js";
-
-dotenv.config();
-
-const PORT = process.env.PORT ?? 5000;
-const app = express();
-
-export const allowed = new Set([
-  "http://localhost:3000",
-  "http://127.0.0.1:3000",
-  "http://192.168.1.116:3000",
-  "https://localhost:3000",
-  "https://budget-chi-vert.vercel.app",
-  "https://localhost:3001",
-]);
-
-const corsOptions = {
-  origin(origin, cb) {
-    if (!origin || allowed.has(origin)) return cb(null, true);
-    return cb(new Error(`CORS: origin not allowed: ${origin}`));
-  },
-  credentials: true,
-  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-  allowedHeaders: [
-    "Content-Type",
-    "Authorization",
-    "X-Requested-With",
-    "X-CSRF-Token",
-  ],
-  maxAge: 600,
-  optionsSuccessStatus: 204,
-};
-
-app.set("trust proxy", 1);
-app.use(cors(corsOptions));
-app.options("*", cors(corsOptions));
-
-app.use(cookieParser());
-app.use(express.json());
-
-app.use((req, res, next) => {
-  if (["GET", "HEAD", "OPTIONS"].includes(req.method) && !req.cookies?.csrf)
-    setCsrfCookie(res);
-  next();
-});
-app.get("/api/auth/csrf", (req, res) => {
-  if (!req.cookies?.csrf) setCsrfCookie(res);
-  return res.sendStatus(204); // без тела; кука уже установлена
-});
-app.use(authMiddleware);
-app.use(csrfGuard);
-
-app.use((req, _, next) => {
-  if (["POST", "PUT", "PATCH", "GET", "DELETE"].includes(req.method)) {
-    console.log(`[BODY] ${req.method} ${req.originalUrl}:`, req.body);
+// кэшируем одно подключение на воркер
+let conn;
+async function ensureReady() {
+  if (!conn) {
+    conn = mongoose
+      .connect(process.env.DB_URL, {
+        dbName: process.env.DB_BASE,
+      })
+      .catch((err) => {
+        // не запоминаем неудачное обещание
+        conn = undefined;
+        console.error("Mongo connect failed:", err);
+        throw err;
+      });
   }
-  next();
-});
+  return conn;
+}
 
-app.use(express.static("public"));
-app.use("/api/budget", budgetSyncMiddleware);
-app.use(notificationMiddleware);
-app.use(morgan("dev"));
-app.use("/api", router);
+// быстрый ответ на preflight БЕЗ попытки соединения с БД
+function setPreflightHeaders(req, res) {
+  const origin = req.headers.origin;
+  const allowed = new Set([
+    "https://budget-chi-vert.vercel.app",
+    "http://localhost:3000",
+    "https://localhost:3000",
+  ]);
+  if (origin && allowed.has(origin)) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+    res.setHeader("Access-Control-Allow-Credentials", "true");
+    res.setHeader("Vary", "Origin");
+  }
+  res.setHeader(
+    "Access-Control-Allow-Methods",
+    "GET,POST,PUT,PATCH,DELETE,OPTIONS"
+  );
+  res.setHeader(
+    "Access-Control-Allow-Headers",
+    req.headers["access-control-request-headers"] ||
+      "Content-Type,Authorization,X-Requested-With,X-CSRF-Token"
+  );
+  res.setHeader("Access-Control-Max-Age", "86400");
+}
 
-const start = async () => {
+export default async function handler(req, res) {
+  if (req.method === "OPTIONS") {
+    setPreflightHeaders(req, res);
+    res.status(204).end();
+    return;
+  }
   try {
-    await mongoose.connect(process.env.DB_URL, {
-      dbName: process.env.DB_BASE,
-    });
-
-    app.listen(PORT, () => console.log(`Сервер Запущен на порту = ${PORT}!`));
-  } catch (e) {
-    console.log(e);
+    await ensureReady();
+    return app(req, res); // отдаём управление Express
+  } catch (err) {
+    // чтобы браузер не порезал CORS даже при 500
+    setPreflightHeaders(req, res);
+    console.error("Serverless error:", err);
+    res
+      .status(500)
+      .json({ message: "Serverless error", details: err?.message });
   }
-};
-
-start();
+}
