@@ -3,7 +3,7 @@ import { expenseService } from "../service/expense-service.js";
 class ExpenseController {
   async getBudgetExpenses(req, res) {
     try {
-      const { userId } = req.query;
+      const userId = req.user?.sub;
 
       if (!userId) {
         return res.json({
@@ -25,7 +25,8 @@ class ExpenseController {
 
   async createExpense(req, res) {
     try {
-      const { userId, expenseData } = req.body;
+      const { expenseData } = req.body;
+      const userId = req.user?.sub;
 
       if (!userId) {
         return res.json({
@@ -47,7 +48,16 @@ class ExpenseController {
 
   async updateExpense(req, res) {
     try {
-      const { expenseId, expenseData, userId } = req.body;
+      const { expenseId, expenseData } = req.body;
+
+      const userId = req.user?.sub;
+
+      if (!userId) {
+        return res.json({
+          message: "Не передан id пользователя",
+          type: "error",
+        });
+      }
 
       if (!expenseId) {
         return res.json({

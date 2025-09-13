@@ -6,7 +6,14 @@ import { expenseHistoryService } from "../service/expense-history-service.js";
 class BudgetController {
   async getUsersInBudget(req, res) {
     try {
-      const { userId } = req.query;
+      const userId = req.user?.sub;
+
+      if (!userId) {
+        return res.json({
+          message: "Не передан id пользователя",
+          type: "error",
+        });
+      }
 
       const response = await budgetService.getUsersInBudget(userId);
 
@@ -20,9 +27,10 @@ class BudgetController {
   }
   async create(req, res) {
     try {
-      const { startSum, ownerId, memberId } = req.body;
+      const { startSum, memberNickname } = req.body;
+      const userId = req.user?.sub;
 
-      if (!ownerId) {
+      if (!userId) {
         res.json({ message: "Не передан id пользователя", type: "error" });
 
         return;
@@ -30,9 +38,9 @@ class BudgetController {
 
       const result = await budgetService.createBudget(
         "Бюджет",
-        ownerId,
+        userId,
         startSum,
-        memberId
+        memberNickname
       );
 
       res.json(result);
@@ -46,7 +54,9 @@ class BudgetController {
 
   async history(req, res) {
     try {
-      const { userId, after, limit, type } = req.query;
+      const { after, limit, type } = req.query;
+
+      const userId = req.user?.sub;
 
       if (!userId) {
         return res.json({
@@ -73,7 +83,7 @@ class BudgetController {
 
   async getBudget(req, res) {
     try {
-      const { userId } = req.query;
+      const userId = req.user?.sub;
 
       if (!userId) {
         res.json({ message: "Не передан id пользователя", type: "error" });
@@ -96,7 +106,9 @@ class BudgetController {
 
   async getAvailableSpendingLimits(req, res) {
     try {
-      const { userId, date, excludeId } = req.query;
+      const { date, excludeId } = req.query;
+
+      const userId = req.user?.sub;
 
       if (!userId) {
         res.json({ message: "Не передан id пользователя", type: "error" });
@@ -126,7 +138,7 @@ class BudgetController {
   async updateIncomeHistory(req, res) {
     try {
       const { incomeData } = req.body;
-      const { userId } = req.query;
+      const userId = req.user?.sub;
 
       if (!userId || !incomeData) {
         return res.json({ message: "Недостаточно данных", type: "error" });
@@ -148,7 +160,8 @@ class BudgetController {
 
   async deleteIncomeHistoryItem(req, res) {
     try {
-      const { userId, incomeHistoryId } = req.query;
+      const userId = req.user?.sub;
+      const { incomeHistoryId } = req.query;
 
       if (!userId || !incomeHistoryId) {
         return res.json({ message: "Недостаточно данных", type: "error" });
@@ -171,7 +184,7 @@ class BudgetController {
   async updateExpenseHistory(req, res) {
     try {
       const { expenseData } = req.body;
-      const { userId } = req.query;
+      const userId = req.user?.sub;
 
       if (!userId || !expenseData) {
         return res.json({ message: "Недостаточно данных", type: "error" });

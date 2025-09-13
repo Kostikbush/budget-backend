@@ -11,7 +11,7 @@ class UserService {
 
     if (candidate) {
       throw new Error(
-        `Пользователь с почтовым адресом ${email} уже существует`,
+        `Пользователь с почтовым адресом ${email} уже существует`
       );
     }
     const hashPassword = await bcrypt.hash(password, 3);
@@ -19,7 +19,7 @@ class UserService {
 
     const res = await mailService.sendActivationMail(
       email,
-      `${process.env.API_URL}/api/activate/${activationLink}`,
+      `${process.env.API_URL}/api/activate/${activationLink}`
     );
 
     if (!res) {
@@ -53,10 +53,18 @@ class UserService {
         .limit(limit)
         .exec()
     ).map((user) => ({
-      _id: user._id,
       name: user.name,
       nickname: user.nickname,
     }));
+  }
+  // email
+  // name
+  // password
+  // nickname
+  // budgets
+  // нужно чтоб возврщалось все кроме password
+  async getUserById(id) {
+    return UserModel.findById(id).select("-password");
   }
 }
 

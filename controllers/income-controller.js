@@ -3,7 +3,7 @@ import { incomeService } from "../service/income-service.js";
 class IncomeController {
   async getBudgetIncomes(req, res) {
     try {
-      const { userId } = req.query;
+      const userId = req.user?.sub;
 
       if (!userId) {
         return res.json({
@@ -25,7 +25,8 @@ class IncomeController {
 
   async createIncome(req, res) {
     try {
-      const { userId, incomeData } = req.body;
+      const { incomeData } = req.body;
+      const userId = req.user?.sub;
 
       if (!userId) {
         return res.json({
@@ -47,7 +48,7 @@ class IncomeController {
 
   async updateIncome(req, res) {
     try {
-      const { incomeId, incomeData, budgetId } = req.body;
+      const { incomeId, incomeData } = req.body;
 
       if (!incomeId) {
         return res.json({
@@ -58,8 +59,7 @@ class IncomeController {
 
       const updateIncome = await incomeService.updateIncome(
         incomeId,
-        incomeData,
-        budgetId,
+        incomeData
       );
 
       return res.json(updateIncome);

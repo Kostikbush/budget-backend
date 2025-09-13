@@ -3,18 +3,32 @@ import { notificationService } from "../service/notification-service.js";
 class NotificationController {
   async getNotifications(req, res) {
     try {
-      const { userId } = req.query;
+      const userId = req.user?.sub;
+      if (!userId) {
+        return res.json({
+          message: "Не передан id пользователя",
+          type: "error",
+        });
+      }
 
-      const users = await notificationService.getUserNotifications(userId);
+      const notifications = await notificationService.getUserNotifications(
+        userId
+      );
 
-      res.json(users);
+      res.json(notifications);
     } catch (e) {
       res.json({ message: e?.message ?? "Ошибка получения уведомлений" });
     }
   }
   async acceptInvite(req, res) {
     try {
-      const { userId } = req.query;
+      const userId = req.user?.sub;
+      if (!userId) {
+        return res.json({
+          message: "Не передан id пользователя",
+          type: "error",
+        });
+      }
 
       const response = await notificationService.acceptInvite(userId);
 
@@ -29,7 +43,13 @@ class NotificationController {
 
   async rejectInvite(req, res) {
     try {
-      const { userId } = req.query;
+      const userId = req.user?.sub;
+      if (!userId) {
+        return res.json({
+          message: "Не передан id пользователя",
+          type: "error",
+        });
+      }
 
       await notificationService.rejectInvite(userId);
 

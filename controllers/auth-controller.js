@@ -1,29 +1,23 @@
 import jwt from "jsonwebtoken";
+import bcrypt from "bcryptjs";
 import User from "../models/user.js";
-import Token from "../models/token.js";
 import slugify from "@sindresorhus/slugify";
 import genUsername from "unique-username-generator";
+import {
+  clearAuthCookies,
+  issueRefresh,
+  revokeAllUserRefreshTokens,
+  rotateRefresh,
+  setRefreshCookie,
+  signAccess,
+  isRefreshActive,
+  setAccessCookie,
+} from "../lib/token.js";
 
 function nicify(name) {
   // аккуратный базовый префикс из имени (опционально)
   return name ? slugify(name, { decamelize: false }) : undefined;
 }
-
-const generateTokens = (user) => {
-  const accessToken = jwt.sign(
-    { id: user._id, email: user.email },
-    process.env.JWT_ACCESS_SECRET,
-    { expiresIn: process.env.ACCESS_TOKEN_EXPIRY }
-  );
-
-  const refreshToken = jwt.sign(
-    { id: user._id },
-    process.env.JWT_REFRESH_SECRET,
-    { expiresIn: process.env.REFRESH_TOKEN_EXPIRY }
-  );
-
-  return { accessToken, refreshToken };
-};
 
 export const register = async (req, res) => {
   try {
@@ -66,16 +60,27 @@ export const register = async (req, res) => {
       tries++;
     }
 
-    const user = await User.create({ email, password, name });
-    const { accessToken, refreshToken } = generateTokens(user);
+    const rounds = Number(process.env.BCRYPT_ROUNDS || 10);
+    const salt = await bcrypt.genSalt(rounds);
+    const passwordHash = await bcrypt.hash(password, salt);
 
-    await Token.create({
-      userId: user._id,
-      token: refreshToken,
-      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+    const user = await User.create({
+      email,
+      password: passwordHash,
+      name,
+      nickname: candidate,
     });
 
-    res.json({ accessToken, refreshToken, user });
+    const payload = { sub: user._id.toString(), role: user.role };
+    const access = signAccess(payload);
+
+    const meta = { userAgent: req.get("user-agent"), ip: req.ip };
+    const { refresh } = await issueRefresh(user._id, meta);
+    setRefreshCookie(res, refresh);
+
+    const { password: _p, ...publicUser } = user.toObject();
+
+    res.json({ access, user: publicUser, type: "success" });
   } catch (err) {
     res.json({ message: "Ошибка регистрации", type: "error" });
   }
@@ -85,59 +90,82 @@ export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
     const user = await User.findOne({ email });
-    if (!user || !(await user.comparePassword(password)))
+
+    if (!user) {
       return res.json({
         message: "Неверный email или пароль",
         type: "error",
       });
+    }
 
-    const { accessToken, refreshToken } = generateTokens(user);
+    const ok = await bcrypt.compare(password, user.password);
+    if (!ok) {
+      return res.status(401).json({ message: "Неверные email или пароль" });
+    }
 
-    await Token.create({
-      userId: user._id,
-      token: refreshToken,
-      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-    });
+    const payload = { sub: user._id.toString(), role: user.role };
+    const access = signAccess(payload);
 
-    res.json({ accessToken, refreshToken, user });
+    setAccessCookie(res, access);
+
+    const meta = { userAgent: req.get("user-agent"), ip: req.ip };
+    const { refresh } = await issueRefresh(user._id, meta);
+    setRefreshCookie(res, refresh);
+
+    const { password: _p, ...publicUser } = user.toObject();
+
+    return res.json({ ...publicUser, type: "success" });
   } catch (err) {
+    console.log(err);
     res.json({ message: "Ошибка входа", type: "error" });
   }
 };
 
 export const refresh = async (req, res) => {
+  const token = req.cookies?.rt;
+  if (!token) {
+    return res.status(401).json({ message: "Нет refresh токена" });
+  }
+
   try {
-    const { token } = req.body;
-    if (!token) return res.status(401).json({ message: "Нет токена" });
+    const decoded = jwt.verify(token, process.env.JWT_REFRESH_SECRET); // { sub, jti, exp }
+    const userId = decoded.sub;
+    const jti = decoded.jti;
 
-    const savedToken = await Token.findOne({ token });
-    if (!savedToken)
+    const active = await isRefreshActive(jti, userId);
+    if (!active) {
+      await revokeAllUserRefreshTokens(userId);
+      clearAuthCookies(res);
       return res
-        .status(403)
-        .json({ message: "Недействительный refresh токен" });
+        .status(401)
+        .json({ message: "Refresh недействителен, выполните вход заново" });
+    }
 
-    const payload = jwt.verify(token, process.env.JWT_REFRESH_SECRET);
-    const user = await User.findById(payload.id);
-    if (!user)
-      return res.status(401).json({ message: "Пользователь не найден" });
+    const payload = { sub: userId };
+    const access = signAccess(payload);
 
-    const { accessToken, refreshToken } = generateTokens(user);
+    const meta = { userAgent: req.get("user-agent"), ip: req.ip };
+    const { refresh: newRefresh } = await rotateRefresh(jti, userId, meta);
+    setRefreshCookie(res, newRefresh);
 
-    await Token.deleteOne({ token }); // invalidate old token
-    await Token.create({
-      userId: user._id,
-      token: refreshToken,
-      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-    });
-
-    res.json({ accessToken, refreshToken });
-  } catch (err) {
-    res.status(403).json({ message: "Невалидный refresh токен" });
+    // НЕ нужно ставить Authorization в ответе
+    return res.json({ access, type: "success" });
+  } catch (e) {
+    clearAuthCookies(res);
+    return res
+      .status(401)
+      .json({ message: "Невалидный refresh", details: e.message });
   }
 };
 
 export const logout = async (req, res) => {
-  const { token } = req.body;
-  await Token.deleteOne({ token });
-  res.json({ message: "Выход выполнен" });
+  const token = req.cookies?.rt;
+  if (token) {
+    try {
+      const decoded = jwt.verify(token, process.env.JWT_REFRESH_SECRET);
+      await revokeAllUserRefreshTokens(decoded.sub);
+    } catch (_) {}
+  }
+  clearAuthCookies(res);
+  return res.json({ ok: true });
 };

@@ -60,4 +60,5 @@ router.delete(
   budgetController.deleteExpenseHistoryItem,
 );
 router.get("/getUsersInBudget", budgetController.getUsersInBudget);
+router.get("/user", userController.getUser);
 export default router;

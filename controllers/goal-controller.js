@@ -3,7 +3,14 @@ import goalService from "../service/goal-service.js";
 class GoalController {
   async getGoals(req, res) {
     try {
-      const { userId } = req.query;
+      const userId = req.user?.sub;
+
+      if (!userId) {
+        return res.json({
+          message: "Не передан id пользователя",
+          type: "error",
+        });
+      }
 
       const response = await goalService.getGoals(userId);
 
@@ -18,7 +25,16 @@ class GoalController {
 
   async createGoal(req, res) {
     try {
-      const { userId, goalData } = req.body;
+      const { goalData } = req.body;
+
+      const userId = req.user?.sub;
+
+      if (!userId) {
+        return res.json({
+          message: "Не передан id пользователя",
+          type: "error",
+        });
+      }
 
       const response = await goalService.createGoal(userId, goalData);
 
@@ -32,7 +48,16 @@ class GoalController {
   }
   async updateGoal(req, res) {
     try {
-      const { userId, goalData, goalId } = req.body;
+      const { goalData, goalId } = req.body;
+
+      const userId = req.user?.sub;
+
+      if (!userId) {
+        return res.json({
+          message: "Не передан id пользователя",
+          type: "error",
+        });
+      }
 
       const response = await goalService.updateGoal(userId, goalId, goalData);
 
@@ -46,7 +71,16 @@ class GoalController {
   }
   async deleteADebitGoal(req, res) {
     try {
-      const { userId, goalId } = req.body;
+      const { goalId } = req.body;
+
+      const userId = req.user?.sub;
+
+      if (!userId) {
+        return res.json({
+          message: "Не передан id пользователя",
+          type: "error",
+        });
+      }
 
       const response = await goalService.deleteADebitGoal(userId, goalId);
 
@@ -78,7 +112,16 @@ class GoalController {
   }
   async deleteAmountFromGoalToBudget(req, res) {
     try {
-      const { goalId, userId } = req.body;
+      const { goalId } = req.body;
+
+      const userId = req.user?.sub;
+
+      if (!userId) {
+        return res.json({
+          message: "Не передан id пользователя",
+          type: "error",
+        });
+      }
 
       const response = await goalService.deleteGoalReturnMoneyBackToTheBudget(
         userId,

@@ -76,7 +76,7 @@ class BudgetService {
    * @param {string} userId - ID пользователя-создателя
    * @returns {Promise<Object>} - Созданный бюджет
    */
-  async createBudget(name, userId, startSum, memberId) {
+  async createBudget(name, userId, startSum, memberNickname) {
     const lastBudget = await BudgetModel.findOne({
       $or: [{ owner: userId }, { "members._id": userId }],
     });
@@ -98,18 +98,29 @@ class BudgetService {
       $push: { budgets: budget._id },
     });
 
-    if (memberId) {
+    if (memberNickname) {
+      const member = await UserModel.findOne({ nickname: memberNickname });
+
+      if (!member) {
+        throw new Error("Пользователь не найден");
+      }
+
       await notificationService.create(
         userId,
-        memberId,
+        member._id?.toString(),
         TypeNotification.invitation,
         "Вас приглашают в бюджет"
       );
+
+      return {
+        budget,
+        message: "Приглашение отправлено пользователю",
+        type: "success",
+      };
     }
 
     return {
       budget,
-      message: "Приглашение отправлено пользователю",
       type: "success",
     };
   }
