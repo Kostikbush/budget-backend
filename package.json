@@ -5,6 +5,7 @@
   "author": "<busharov.k.v@citilink.ru>",
   "license": "MIT",
   "type": "module",
+  "engines": { "node": "20.x" },
   "scripts": {
     "dev": "node server.js",
     "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
