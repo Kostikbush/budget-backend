@@ -21,6 +21,7 @@ export const ALLOWED = new Set([
   "https://budget-chi-vert.vercel.app",
   "http://localhost:3000",
   "https://localhost:3000",
+  "https://localhost:3001",
 ]);
 
 function setCors(req, res) {

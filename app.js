@@ -12,7 +12,6 @@ import { authMiddleware, csrfGuard, setCsrfCookie } from "./middleware/auth.js";
 
 dotenv.config();
 
-const PORT = process.env.PORT ?? 5000;
 const app = express();
 
 export const allowed = new Set([
@@ -26,7 +25,7 @@ export const allowed = new Set([
 
 const corsOptions = {
   origin(origin, cb) {
-    if (!origin || allowed.has(origin)) return cb(null, true);
+    if (origin || allowed.has(origin)) return cb(null, true);
     return cb(new Error(`CORS: origin not allowed: ${origin}`));
   },
   credentials: true,
