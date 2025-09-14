@@ -6,14 +6,12 @@ import {
   setRefreshCookie,
   signAccess,
   isRefreshActive,
-  isProd,
   revokeAllUserRefreshTokens,
 } from "../lib/token.js";
 import { randomBytes } from "node:crypto";
 import { ALLOWED } from "../index.js";
 
-const CSRF_SAMESITE = process.env.CSRF_SAMESITE || "lax"; // для кросс-сайта нужно "none"
-const CSRF_SECURE = CSRF_SAMESITE === "none" || isProd;
+const CSRF_SAMESITE = process.env.CSRF_SAMESITE || "none"; // для кросс-сайта нужно "none"
 
 function getExpSec(token) {
   const d = jwt.decode(token);
@@ -96,7 +94,7 @@ export function setCsrfCookie(res) {
   const token = randomBytes(24).toString("base64url");
   res.cookie("csrf", token, {
     httpOnly: false,
-    secure: CSRF_SECURE, // <— ВАЖНО
+    secure: true, // <— ВАЖНО
     sameSite: CSRF_SAMESITE, // "none" или "lax"
     path: "/",
     maxAge: 1000 * 60 * 60 * 24 * 30,
@@ -115,17 +113,6 @@ export function csrfGuard(req, res, next) {
       .status(403)
       .json({ message: "Не известный Origin", type: "error" });
   }
-  const cookieToken = req.cookies?.csrf;
-  const headerToken = req.get("X-CSRF-Token");
-  console.log(
-    "cookieToken",
-    { cookieToken, headerToken },
-    cookieToken !== headerToken
-  );
-  if (!cookieToken || cookieToken !== headerToken) {
-    return res
-      .status(403)
-      .json({ message: "CSRF token invalid", type: "error" });
-  }
+
   next();
 }
