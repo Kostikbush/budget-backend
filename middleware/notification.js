@@ -2,7 +2,7 @@ import { notificationService } from "../service/notification-service.js";
 
 export const notificationMiddleware = async (req, res, next) => {
   try {
-    const userId = req.query?.userId || req.body?.userId;
+    const userId = req.user?.sub;
 
     let notifications = [];
 
