@@ -323,7 +323,7 @@ class BudgetService {
     });
 
     if (!budget) {
-      throw new Error("Бюджет не найден");
+      return { type: "success", items: [], hasMore: false, nextCursor: null };
     }
 
     const budgetId = budget._id.toString();
@@ -420,10 +420,6 @@ class BudgetServiceUtils {
   simulateBudgetHealth(budget, incomes, expenses, years = 5) {
     const today = startOfDay(new Date());
     const end = addYears(today, years);
-    // const calcExpenses = excludeId
-    //   ? expenses.filter((element) => element._id?.toString() !== excludeId)
-    //   : expenses;
-
     const events = [];
 
     const collect = (list, sign = 1) => {
@@ -441,7 +437,7 @@ class BudgetServiceUtils {
 
           currentDate = this.getNextDateFromFrequency(
             currentDate,
-            item.frequency,
+            item.frequency
           );
         }
       }
@@ -479,13 +475,38 @@ class BudgetServiceUtils {
     switch (frequency) {
       case "daily":
         return addDays(date, 1);
+      case "every_2_days":
+        return addDays(date, 2);
+      case "every_3_days":
+        return addDays(date, 3);
+      case "every_4_days":
+        return addDays(date, 4);
+      case "every_5_days":
+        return addDays(date, 5);
+      case "every_6_days":
+        return addDays(date, 6);
       case "weekly":
         return addWeeks(date, 1);
+      case "every_2_weeks":
+        return addWeeks(date, 2);
+      case "every_3_weeks":
+        return addWeeks(date, 3);
+      case "every_4_weeks":
+        return addWeeks(date, 4);
       case "monthly":
         return addMonths(date, 1);
+      case "every_2_months":
+        return addMonths(date, 2);
+      case "every_3_months":
+        return addMonths(date, 3);
+      case "every_4_months":
+        return addMonths(date, 4);
+      case "every_5_months":
+        return addMonths(date, 5);
+      case "every_6_months":
+        return addMonths(date, 6);
       case "yearly":
         return addYears(date, 1);
-      case "once":
       default:
         return null;
     }
@@ -495,7 +516,7 @@ class BudgetServiceUtils {
     budget,
     expenses,
     incomes,
-    options = { date: new Date(), excludeId: null },
+    options = { date: new Date(), excludeId: null }
   ) {
     const result = {};
     const MAX_CEIL = 1_000_000;
@@ -513,7 +534,7 @@ class BudgetServiceUtils {
         const simulatedExpenses = cloneDeep(
           excludeId
             ? expenses.filter((e) => e._id?.toString() !== excludeId)
-            : expenses,
+            : expenses
         ).concat([
           {
             amount: mid,
@@ -525,7 +546,7 @@ class BudgetServiceUtils {
         const isHealthy = this.simulateBudgetHealth(
           budget,
           incomes.filter((i) => i.frequency !== "once"),
-          simulatedExpenses,
+          simulatedExpenses
         );
 
         if (isHealthy) {

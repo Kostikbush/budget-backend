@@ -26,8 +26,9 @@ async function withLock(key, fn) {
 }
 
 export async function budgetSyncMiddleware(req, res, next) {
+  console.log(">>> budgetSyncMiddleware");
   try {
-    const { userId } = req.query;
+    const userId = req.user?.sub;
     if (!userId) return next();
 
     const budgetIdDoc = await BudgetModel.findOne(
@@ -37,8 +38,6 @@ export async function budgetSyncMiddleware(req, res, next) {
 
     if (!budgetIdDoc?._id) return next();
     const budgetId = budgetIdDoc._id.toString();
-
-    
 
     await withLock(`budget:${budgetId}`, async () => {
       const today = startOfDay(new Date());

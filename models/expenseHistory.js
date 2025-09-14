@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import { categories } from "./expense.js";
+import { categories, Frequencies } from "./expense.js";
 
 const expenseHistorySchema = new mongoose.Schema({
   entityId: {
@@ -17,7 +17,7 @@ const expenseHistorySchema = new mongoose.Schema({
   priority: { type: Number, min: 1, max: 3, default: 3 },
   frequency: {
     type: String,
-    enum: ["once", "daily", "weekly", "monthly", "yearly"],
+    enum: Frequencies,
     default: "daily",
   },
   scope: { type: String, enum: ["personal", "shared"], default: "personal" },

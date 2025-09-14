@@ -60,6 +60,28 @@ export const categories = [
   "housekeeping",
   "entertainment",
   "spa",
+  "magazine",
+];
+
+export const Frequencies = [
+  "once",
+  "daily",
+  "every_2_days",
+  "every_3_days",
+  "every_4_days",
+  "every_5_days",
+  "every_6_days",
+  "weekly",
+  "every_2_weeks",
+  "every_3_weeks",
+  "every_4_weeks",
+  "monthly",
+  "every_2_months",
+  "every_3_months",
+  "every_4_months",
+  "every_5_months",
+  "every_6_months",
+  "yearly",
 ];
 
 const expenseSchema = new mongoose.Schema({
@@ -72,7 +94,7 @@ const expenseSchema = new mongoose.Schema({
   priority: { type: Number, min: 1, max: 3, default: 1 },
   frequency: {
     type: String,
-    enum: ["once", "daily", "weekly", "monthly", "yearly"],
+    enum: Frequencies,
     default: "daily",
   },
   scope: { type: String, enum: ["personal", "shared"], default: "personal" },

@@ -74,6 +74,7 @@ class BudgetController {
 
       return res.json(result);
     } catch (error) {
+      console.log("Budget history error:", error);
       return res.json({
         message: error?.message ?? "Ошибка получения истории",
         type: "error",
