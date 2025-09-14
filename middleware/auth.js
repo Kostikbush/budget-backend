@@ -117,6 +117,11 @@ export function csrfGuard(req, res, next) {
   }
   const cookieToken = req.cookies?.csrf;
   const headerToken = req.get("X-CSRF-Token");
+  console.log(
+    "cookieToken",
+    { cookieToken, headerToken },
+    cookieToken !== headerToken
+  );
   if (!cookieToken || cookieToken !== headerToken) {
     return res
       .status(403)
