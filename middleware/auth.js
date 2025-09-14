@@ -111,7 +111,9 @@ export function csrfGuard(req, res, next) {
   const origin = req.get("Origin");
   console.log({ origin }, ALLOWED.has(origin));
   if (!origin || !ALLOWED.has(origin)) {
-    return res.status(403).json({ message: "Bad Origin", type: "error" });
+    return res
+      .status(403)
+      .json({ message: "Не известный Origin", type: "error" });
   }
   const cookieToken = req.cookies?.csrf;
   const headerToken = req.get("X-CSRF-Token");
