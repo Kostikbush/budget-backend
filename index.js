@@ -22,6 +22,7 @@ export const ALLOWED = new Set([
   "http://localhost:3000",
   "https://localhost:3000",
   "https://localhost:3001",
+  "https://budget-backend-kappa.vercel.app",
 ]);
 
 function setCors(req, res) {

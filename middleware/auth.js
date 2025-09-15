@@ -109,7 +109,7 @@ export function csrfGuard(req, res, next) {
   if (["GET", "HEAD", "OPTIONS"].includes(req.method)) return next();
   const origin = req.get("Origin");
   console.log({ origin }, ALLOWED.has(origin));
-  if (!origin || !ALLOWED.has(origin)) {
+  if (!ALLOWED.has(origin)) {
     return res
       .status(403)
       .json({ message: "Не известный Origin", type: "error" });
