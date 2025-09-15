@@ -43,8 +43,9 @@ export const authMiddleware = async (req, res, next) => {
     }
     // нет access или он протух — пробуем refresh
     const rt = req.cookies?.rt;
-    console.log("Refresh Token:", rt, req.cookies);
+    console.log("Refresh Token:", rt, req.cookies, { req });
     if (!rt) {
+      console.log("AUTH_ERROR:");
       clearAuthCookies(res);
       return res
         .status(401)
