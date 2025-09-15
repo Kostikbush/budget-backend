@@ -41,6 +41,17 @@ const corsOptions = {
 };
 
 app.set("trust proxy", 1);
+app.get("/api/_debug", (req, res) => {
+  res.json({
+    origin: req.get("Origin") || null,
+    cookies: Object.keys(req.cookies || {}),
+    has_at: Boolean(req.cookies?.at),
+    has_rt: Boolean(req.cookies?.rt),
+    user_agent: req.get("user-agent"),
+    host: req.get("host"),
+  });
+});
+
 app.use(cors(corsOptions));
 app.options("*", cors(corsOptions));
 
