@@ -84,6 +84,7 @@ app.use(morgan("dev"));
 app.use("/api", router);
 
 app.use((err, req, res, next) => {
+  console.log("app.use((err, req, res, next):", { err });
   if (err?.message?.startsWith("CORS:")) {
     if (!res.headersSent) {
       res.set("Vary", "Origin");
@@ -95,11 +96,12 @@ app.use((err, req, res, next) => {
     }
     return res.status(403).json({ message: err.message });
   }
+  console.log("ECONNRESET_1:", req.method, req.originalUrl);
   if (
     err &&
     (err.code === "ECONNRESET" || /ECONNRESET/i.test(err.message || ""))
   ) {
-    console.warn("ECONNRESET:", req.method, req.originalUrl);
+    console.log("ECONNRESET:", req.method, req.originalUrl);
     return;
   }
   if (res.headersSent) return next(err);
