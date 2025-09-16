@@ -18,7 +18,7 @@ const app = express();
 const corsOptions = {
   origin(origin, cb) {
     console.log("`CORS: origin not allowe", { origin });
-    if (ALLOWED.has(origin) || origin === "" || !origin) return cb(null, true);
+    if (ALLOWED.has(origin) || !origin) return cb(null, true);
     return cb(new Error(`CORS: origin not allowed: ${origin}`));
   },
   credentials: true,

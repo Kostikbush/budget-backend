@@ -20,6 +20,7 @@ import goalService from "./goal-service.js";
 import { expenseService } from "./expense-service.js";
 import { cloneDeep } from "lodash-es";
 import { incomeService } from "./income-service.js";
+import { Frequencies } from "../models/expense.js";
 
 /**
  * @typedef {Object} Budget
@@ -391,8 +392,6 @@ class BudgetService {
   }
 }
 
-const FREQUENCIES = ["daily", "weekly", "monthly", "yearly"];
-
 class BudgetServiceUtils {
   isUserBudget(budget, userId) {
     if (!budget) {
@@ -522,7 +521,7 @@ class BudgetServiceUtils {
     const MAX_CEIL = 1_000_000;
     const { excludeId, date } = options;
 
-    for (const frequency of FREQUENCIES) {
+    for (const frequency of Frequencies) {
       let low = 0;
       let high = MAX_CEIL;
       let best = 0;
