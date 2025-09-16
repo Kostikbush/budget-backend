@@ -9,23 +9,16 @@ import router from "./router/index.js";
 import { notificationMiddleware } from "./middleware/notification.js";
 import { budgetSyncMiddleware } from "./middleware/budget.js";
 import { authMiddleware, csrfGuard, setCsrfCookie } from "./middleware/auth.js";
+import { ALLOWED } from "./index.js";
 
 dotenv.config();
 
 const app = express();
 
-export const allowed = new Set([
-  "http://localhost:3000",
-  "http://127.0.0.1:3000",
-  "http://192.168.1.116:3000",
-  "https://localhost:3000",
-  "https://budget-chi-vert.vercel.app",
-  "https://localhost:3001",
-]);
-
 const corsOptions = {
   origin(origin, cb) {
-    if (origin || allowed.has(origin)) return cb(null, true);
+    console.log("`CORS: origin not allowe", { origin });
+    if (ALLOWED.has(origin) || origin === "" || !origin) return cb(null, true);
     return cb(new Error(`CORS: origin not allowed: ${origin}`));
   },
   credentials: true,
