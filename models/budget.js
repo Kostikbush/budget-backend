@@ -3,7 +3,7 @@ import { Schema, model, Types } from "mongoose";
 const BudgetSchema = new Schema(
   {
     name: { type: String, required: true },
-    sum: { type: Number, required: true },
+    sum: { type: Number, required: true }, // текущая сумма в бюджете
     owner: { type: Types.ObjectId, ref: "User", required: true },
     updatedAt: { type: Date, default: Date.now, required: true },
     members: [
@@ -15,7 +15,7 @@ const BudgetSchema = new Schema(
   },
   {
     timestamps: true,
-  },
+  }
 );
 
 export const BudgetModel = model("Budget", BudgetSchema);

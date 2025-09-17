@@ -225,5 +225,28 @@ class BudgetController {
       });
     }
   }
+  async getBarsByUser(req, res) {
+    try {
+      const { ranges } = req.query;
+      const userId = req.user?.sub;
+
+      if (!userId) {
+        return res.json({ message: "Недостаточно данных", type: "error" });
+      }
+
+      if (!ranges || !ranges.length) {
+        return res.json({ message: "Недостаточно данных", type: "error" });
+      }
+
+      const result = await budgetService.getBarsByUser({ userId, ranges });
+
+      return res.json(result);
+    } catch (error) {
+      return res.json({
+        message: error?.message ?? "Ошибка получения данных по бюджету",
+        type: "error",
+      });
+    }
+  }
 }
 export default new BudgetController();

@@ -15,6 +15,9 @@ import {
   isBefore,
   startOfDay,
   isAfter,
+  startOfMonth,
+  endOfMonth,
+  format,
 } from "date-fns";
 import goalService from "./goal-service.js";
 import { expenseService } from "./expense-service.js";
@@ -389,6 +392,79 @@ class BudgetService {
         type: "success",
       };
     }
+  }
+  /**
+   * @param {Object} input
+   * @param {string} input.userId - пользователь
+   * @param {Array} input.ranges - массив диапазонов в формате:
+   *   { month, year } | { monthFrom, monthTo, year } |
+   *   { year } | { yearFrom, yearTo }
+   *
+   * @returns {Promise<Object{data: Array<{label:string, income:number, expense:number, net:number}>, type: "success"}>}
+   */
+  async getBarsByUser(input) {
+    const { ranges, userId } = input;
+
+    const budget = (await this.getUserBudget(userId)).budget;
+
+    if (!budget) throw new Error("Бюджет не найден");
+
+    const budgetObjId = budget._id;
+
+    const sumByRange = async (Model, from, to) => {
+      const res = await Model.aggregate([
+        { $match: { budgetId: budgetObjId, date: { $gte: from, $lte: to } } },
+        { $group: { _id: null, total: { $sum: "$amount" } } },
+        { $project: { _id: 0, total: { $ifNull: ["$total", 0] } } },
+      ]);
+      return res[0]?.total ?? 0;
+    };
+
+    const out = [];
+
+    for (const r of ranges) {
+      let from, to, label;
+
+      // --- разные форматы ---
+      if (r.month && r.year) {
+        // один месяц
+        from = startOfMonth(new Date(r.year, r.month - 1, 1));
+        to = endOfMonth(from);
+        label = format(from, "LLLL yyyy");
+      } else if (r.monthFrom && r.monthTo && r.year) {
+        // диапазон месяцев в году
+        from = startOfMonth(new Date(r.year, r.monthFrom - 1, 1));
+        to = endOfMonth(new Date(r.year, r.monthTo - 1, 1));
+        label = `${format(from, "LLL")}–${format(to, "LLL yyyy")}`;
+      } else if (r.year) {
+        // один год
+        from = startOfYear(new Date(r.year, 0, 1));
+        to = endOfYear(from);
+        label = `${r.year}`;
+      } else if (r.yearFrom && r.yearTo) {
+        // диапазон лет
+        from = startOfYear(new Date(r.yearFrom, 0, 1));
+        to = endOfYear(new Date(r.yearTo, 0, 1));
+        label = `${r.yearFrom}–${r.yearTo}`;
+      } else {
+        throw new Error("Invalid range format: " + JSON.stringify(r));
+      }
+
+      // запросы
+      const [income, expense] = await Promise.all([
+        sumByRange(IncomeHistoryModel, from, to),
+        sumByRange(ExpenseHistoryModel, from, to),
+      ]);
+
+      out.push({
+        label,
+        income,
+        expense,
+        net: income - expense,
+      });
+    }
+
+    return { data: out, type: "success" };
   }
 }
 
