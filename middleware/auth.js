@@ -43,7 +43,7 @@ export const authMiddleware = async (req, res, next) => {
     }
     // нет access или он протух — пробуем refresh
     const rt = req.cookies?.rt;
-    console.log("Refresh Token:", rt, req.cookies, { req });
+    console.log("Refresh Token:", rt, req.cookies);
     if (!rt) {
       console.log("AUTH_ERROR:");
       clearAuthCookies(res);
@@ -108,7 +108,7 @@ export function csrfGuard(req, res, next) {
 
   if (["GET", "HEAD", "OPTIONS"].includes(req.method)) return next();
   const origin = req.get("Origin");
-  console.log({ origin }, ALLOWED.has(origin));
+
   if (!ALLOWED.has(origin)) {
     return res
       .status(403)

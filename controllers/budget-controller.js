@@ -230,15 +230,20 @@ class BudgetController {
       const { ranges } = req.query;
       const userId = req.user?.sub;
 
+      const array = JSON.parse(ranges || "[]");
+
       if (!userId) {
         return res.json({ message: "Недостаточно данных", type: "error" });
       }
 
-      if (!ranges || !ranges.length) {
+      if (!array || !array.length) {
         return res.json({ message: "Недостаточно данных", type: "error" });
       }
 
-      const result = await budgetService.getBarsByUser({ userId, ranges });
+      const result = await budgetService.getBarsByUser({
+        userId,
+        ranges: array,
+      });
 
       return res.json(result);
     } catch (error) {
