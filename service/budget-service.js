@@ -17,10 +17,13 @@ import {
   isAfter,
   startOfMonth,
   endOfMonth,
+  startOfYear,
+  endOfYear,
   format,
 } from "date-fns";
 import goalService from "./goal-service.js";
 import { expenseService } from "./expense-service.js";
+import { sumPlannedIncomes, sumPlannedExpenses, sumPlannedGoals } from "./bars-plan.util.js";
 import { cloneDeep } from "lodash-es";
 import { incomeService } from "./income-service.js";
 import { Frequencies } from "../models/expense.js";
@@ -399,11 +402,12 @@ class BudgetService {
    * @param {Array} input.ranges - массив диапазонов в формате:
    *   { month, year } | { monthFrom, monthTo, year } |
    *   { year } | { yearFrom, yearTo }
+   * @param {boolean} [input.withPlans=false] - добавлять ли сведения по текущим планам
    *
-   * @returns {Promise<Object{data: Array<{label:string, income:number, expense:number, net:number}>, type: "success"}>}
+   * @returns {Promise<Object{data: Array<{label:string, income:number, expense:number, net:number, [plansIncome]?:number, [plansExpense]?:number, [plansNet]?:number}>, type: "success"}>}
    */
   async getBarsByUser(input) {
-    const { ranges, userId } = input;
+    const { ranges, userId, withPlans = false } = input;
 
     const budget = (await this.getUserBudget(userId)).budget;
 
@@ -411,12 +415,16 @@ class BudgetService {
 
     const budgetObjId = budget._id;
 
-    const sumByRange = async (Model, from, to) => {
+    const sumByRange = async (Model, from, to, match = {}, dateField = "date") => {
+      const matchStage = { budgetId: budgetObjId, ...match };
+      matchStage[dateField] = { $gte: from, $lte: to };
+
       const res = await Model.aggregate([
-        { $match: { budgetId: budgetObjId, date: { $gte: from, $lte: to } } },
+        { $match: matchStage },
         { $group: { _id: null, total: { $sum: "$amount" } } },
         { $project: { _id: 0, total: { $ifNull: ["$total", 0] } } },
       ]);
+
       return res[0]?.total ?? 0;
     };
 
@@ -450,18 +458,33 @@ class BudgetService {
         throw new Error("Invalid range format: " + JSON.stringify(r));
       }
 
-      // запросы
       const [income, expense] = await Promise.all([
         sumByRange(IncomeHistoryModel, from, to),
         sumByRange(ExpenseHistoryModel, from, to),
       ]);
 
-      out.push({
+      const item = {
         label,
         income,
         expense,
         net: income - expense,
-      });
+      };
+
+      if (withPlans) {
+        const [plansIncome, plannedExpenses, plannedGoals] = await Promise.all([
+          sumPlannedIncomes(from, to, budgetObjId),
+          sumPlannedExpenses(from, to, budgetObjId),
+          sumPlannedGoals(from, to, budgetObjId),
+        ]);
+
+        const plansExpense = plannedExpenses + plannedGoals;
+
+        item.plansIncome = plansIncome;
+        item.plansExpense = plansExpense;
+        item.plansNet = plansIncome - plansExpense;
+      }
+
+      out.push(item);
     }
 
     return { data: out, type: "success" };

@@ -1,4 +1,4 @@
-import { budgetService } from "../service/budget-service.js";
+﻿import { budgetService } from "../service/budget-service.js";
 import { Types } from "mongoose";
 import { incomeHistoryService } from "../service/income-history-service.js";
 import { expenseHistoryService } from "../service/expense-history-service.js";
@@ -227,10 +227,14 @@ class BudgetController {
   }
   async getBarsByUser(req, res) {
     try {
-      const { ranges } = req.query;
+      const { ranges, withPlans } = req.query;
       const userId = req.user?.sub;
 
       const array = JSON.parse(ranges || "[]");
+      const includePlans =
+        typeof withPlans === "string"
+          ? ["true", "1"].includes(withPlans.toLowerCase())
+          : Boolean(withPlans);
 
       if (!userId) {
         return res.json({ message: "Недостаточно данных", type: "error" });
@@ -243,6 +247,7 @@ class BudgetController {
       const result = await budgetService.getBarsByUser({
         userId,
         ranges: array,
+        withPlans: includePlans,
       });
 
       return res.json(result);

@@ -26,7 +26,6 @@ async function withLock(key, fn) {
 }
 
 export async function budgetSyncMiddleware(req, res, next) {
-  console.log(">>> budgetSyncMiddleware");
   try {
     const userId = req.user?.sub;
     if (!userId) return next();

@@ -63,13 +63,6 @@ app.get("/api/auth/csrf", (req, res) => {
 app.use(authMiddleware);
 app.use(csrfGuard);
 
-app.use((req, _, next) => {
-  if (["POST", "PUT", "PATCH", "GET", "DELETE"].includes(req.method)) {
-    console.log(`[BODY] ${req.method} ${req.originalUrl}:`, req.body);
-  }
-  next();
-});
-
 app.use(express.static("public"));
 app.use("/api/budget", budgetSyncMiddleware);
 app.use(notificationMiddleware);
