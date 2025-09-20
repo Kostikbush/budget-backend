@@ -158,7 +158,6 @@ export function countOccurrencesBetween(start, freq, from, to, end) {
   };
   if (daySteps[freq]) {
     const step = daySteps[freq];
-    const diff = differenceInDays(searchTo, lifeFrom);
     // индекс первого ≥ searchFrom
     const offset = Math.ceil(differenceInDays(searchFrom, lifeFrom) / step);
     const first = addDays(lifeFrom, offset * step);
@@ -197,19 +196,15 @@ export function countOccurrencesBetween(start, freq, from, to, end) {
     const offset = Math.ceil(differenceInMonths(searchFrom, lifeFrom) / step);
     let first = addMonths(lifeFrom, offset * step);
 
-    // проверка на «31-е число» — если в этом месяце нет такого дня, перепрыгиваем вперёд
-    while (first < searchFrom && first <= searchTo) {
-      first = addMonths(first, step);
-    }
+    // гарантируем first >= searchFrom
+    while (first < searchFrom) first = addMonths(first, step);
     if (first > searchTo) return 0;
 
     let cnt = 0;
     let cur = first;
     while (cur <= searchTo) {
-      // только если день месяца совпадает (например, не «31 февраля»)
-      if (cur.getDate() === lifeFrom.getDate()) {
-        cnt++;
-      }
+      // только если "день месяца" совпадает с якорем (31-е может пропасть)
+      if (cur.getDate() === lifeFrom.getDate()) cnt++;
       cur = addMonths(cur, step);
     }
     return cnt;
@@ -219,6 +214,9 @@ export function countOccurrencesBetween(start, freq, from, to, end) {
   if (freq === "yearly") {
     const offset = Math.ceil(differenceInYears(searchFrom, lifeFrom));
     let first = addYears(lifeFrom, offset);
+
+    // 🔧 КРИТИЧЕСКОЕ: гарантируем first >= searchFrom
+    while (first < searchFrom) first = addYears(first, 1);
     if (first > searchTo) return 0;
 
     let cnt = 0;
