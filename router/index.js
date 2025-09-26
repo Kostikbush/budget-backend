@@ -12,6 +12,7 @@ import {
   register,
 } from "../controllers/auth-controller.js";
 import goalController from "../controllers/goal-controller.js";
+import { subscribe, unsubscribe } from "../controllers/push-subscription.js";
 
 const router = new Router();
 
@@ -62,4 +63,6 @@ router.delete(
 router.get("/getUsersInBudget", budgetController.getUsersInBudget);
 router.get("/user", userController.getUser);
 router.get("/bars", budgetController.getBarsByUser);
+router.post("/subscribe", subscribe);
+router.post("/unsubscribe", unsubscribe);
 export default router;

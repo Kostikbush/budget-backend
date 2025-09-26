@@ -1,5 +1,6 @@
 import NotificationModel, { TypeNotification } from "../models/notification.js";
 import { budgetService } from "./budget-service.js";
+import { pushService } from "./push-service.js";
 
 /**
  * Сервис для работы с уведомлениями
@@ -21,6 +22,18 @@ class NotificationService {
       createdAt: new Date(),
       isRead: false,
       entityId: entityId ?? null,
+    });
+
+    void pushService.safeSendToUser(String(recipientId), {
+      title: type === TypeNotification.newExpense
+        ? "Новый расход требует согласования"
+        : "Приглашение в бюджет",
+      body: message,
+      data: { url: "/" },
+      // По желанию — action-кнопки (обработаете в SW)
+      actions: [
+      { action: "open", title: "Открыть" }
+      ],
     });
   }
 
