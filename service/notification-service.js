@@ -30,9 +30,8 @@ class NotificationService {
         : "Приглашение в бюджет",
       body: message,
       data: { url: "/" },
-      // По желанию — action-кнопки (обработаете в SW)
       actions: [
-      { action: "open", title: "Открыть" }
+        { action: "open", title: "Открыть" }
       ],
     });
   }

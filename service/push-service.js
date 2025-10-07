@@ -32,7 +32,6 @@ class PushService {
     return { sent };
   }
 
-  // безопасный вариант, чтобы не ронять основной поток
   async safeSendToUser(userId, payload) {
     try {
       return await this.sendToUser(userId, payload);

@@ -617,7 +617,7 @@ class BudgetServiceUtils {
     options = { date: new Date(), excludeId: null }
   ) {
     const result = {};
-    const MAX_CEIL = 1_000_000;
+    const MAX_CEIL = 1_000_000_000_000;
     const { excludeId, date } = options;
 
     for (const frequency of Frequencies) {
