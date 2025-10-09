@@ -145,7 +145,7 @@ class IncomeHistoryService {
       incomes,
       allExpenses,
     );
-    console.log({'budget.sum': budget.sum})
+    console.log({ "budget.sum": budget.sum });
     if (!isHealthy) {
       throw new Error("Бюджет станет отрицательным после удаления");
     }

@@ -50,23 +50,25 @@ class ExpenseService {
     } = expenseData;
 
     let newDate = new Date(date);
-
+    console.log("ONE");
     const { budget, allExpenses, incomes } =
       await budgetService.getBudgetDetails(userId);
     const budgetId = budget._id.toString();
     const budgetAmount = budget?.sum ?? 0;
 
-    const simulatedExpenses = [...allExpenses, { amount, frequency, date }];
-
     const isOnce = frequency === "once";
+
+    const simulatedExpenses = isOnce
+      ? allExpenses
+      : [...allExpenses, { amount, frequency, date }];
     const isTodayExpense = isToday(date);
 
     if ((isOnce || isTodayExpense) && budgetAmount - amount < 0) {
       throw new Error("В бюджете нет средств на этот расход");
     }
-
+    console.log("TWO");
     const isHealthy = budgetServiceUtils.isBudgetHealthy(
-      budget.sum,
+      isOnce ? budget.sum - amount : budget.sum,
       incomes,
       simulatedExpenses,
     );

@@ -86,7 +86,9 @@ class IncomeService {
       (income) => income._id.toString() !== incomeId,
     );
 
-    if (!budgetServiceUtils.isBudgetHealthy(budget.sum, newIncomes, allExpenses)) {
+    if (
+      !budgetServiceUtils.isBudgetHealthy(budget.sum, newIncomes, allExpenses)
+    ) {
       throw new Error(
         "Удаляя доход бюджет уйдет в минус через некоторое время!",
       );
