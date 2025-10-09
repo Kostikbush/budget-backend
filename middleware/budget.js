@@ -20,7 +20,7 @@ async function withLock(key, fn) {
       release();
       // если в цепочке ещё кто-то ждёт — не удаляем key, он перезапишется
       if (locks.get(key) === p) locks.delete(key);
-    })
+    }),
   );
   return p;
 }
@@ -32,7 +32,7 @@ export async function budgetSyncMiddleware(req, res, next) {
 
     const budgetIdDoc = await BudgetModel.findOne(
       { $or: [{ owner: userId }, { "members._id": userId }] },
-      { _id: 1 }
+      { _id: 1 },
     ).lean();
 
     if (!budgetIdDoc?._id) return next();
@@ -51,7 +51,7 @@ export async function budgetSyncMiddleware(req, res, next) {
           ],
         },
         { $set: { updatedAt: today } },
-        { new: true }
+        { new: true },
       ).lean();
 
       // если budget === null, значит уже обновляли сегодня — выходим
@@ -86,14 +86,14 @@ export async function budgetSyncMiddleware(req, res, next) {
 
           currentDate = budgetServiceUtils.getNextDateFromFrequency(
             currentDate,
-            income.frequency
+            income.frequency,
           );
         }
 
         // атомарный сдвиг только вперёд
         await IncomeModel.updateOne(
           { _id: income._id, date: { $lt: currentDate } },
-          { $set: { date: currentDate } }
+          { $set: { date: currentDate } },
         ).exec();
       }
 
@@ -122,13 +122,13 @@ export async function budgetSyncMiddleware(req, res, next) {
 
           currentDate = budgetServiceUtils.getNextDateFromFrequency(
             currentDate,
-            expense.frequency
+            expense.frequency,
           );
         }
 
         await ExpenseModel.updateOne(
           { _id: expense._id, date: { $lt: currentDate } },
-          { $set: { date: currentDate } }
+          { $set: { date: currentDate } },
         ).exec();
       }
 
@@ -189,7 +189,7 @@ export async function budgetSyncMiddleware(req, res, next) {
           newCurrent = nextAmount;
           currentDate = budgetServiceUtils.getNextDateFromFrequency(
             currentDate,
-            goal.frequency
+            goal.frequency,
           );
         }
 
@@ -213,7 +213,7 @@ export async function budgetSyncMiddleware(req, res, next) {
               dayOfMoneyWriteOff: currentDate,
               endDate: newEndDate,
             },
-          }
+          },
         ).exec();
       }
 

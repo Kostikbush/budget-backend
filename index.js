@@ -1,5 +1,5 @@
-import mongoose from "mongoose"
-import webpush from "web-push";;
+import mongoose from "mongoose";
+import webpush from "web-push";
 import app from "./app.js";
 
 let conn;
@@ -38,12 +38,12 @@ function setCors(req, res) {
   }
   res.setHeader(
     "Access-Control-Allow-Methods",
-    "GET,POST,PUT,PATCH,DELETE,OPTIONS"
+    "GET,POST,PUT,PATCH,DELETE,OPTIONS",
   );
   res.setHeader(
     "Access-Control-Allow-Headers",
     req.headers["access-control-request-headers"] ||
-      "Content-Type,Authorization,X-Requested-With,X-CSRF-Token"
+      "Content-Type,Authorization,X-Requested-With,X-CSRF-Token",
   );
   res.setHeader("Access-Control-Max-Age", "86400");
 }
@@ -56,11 +56,11 @@ export default async function handler(req, res) {
     return;
   }
   try {
-      webpush.setVapidDetails(
-        process.env.VAPID_SUBJECT,
-        process.env.VAPID_PUBLIC_KEY,
-        process.env.VAPID_PRIVATE_KEY
-      );
+    webpush.setVapidDetails(
+      process.env.VAPID_SUBJECT,
+      process.env.VAPID_PUBLIC_KEY,
+      process.env.VAPID_PRIVATE_KEY,
+    );
     await ensureReady(); // коннектимся только для «реальных» запросов
     return app(req, res); // передаём в Express
   } catch (err) {

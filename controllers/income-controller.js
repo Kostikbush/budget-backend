@@ -59,7 +59,7 @@ class IncomeController {
 
       const updateIncome = await incomeService.updateIncome(
         incomeId,
-        incomeData
+        incomeData,
       );
 
       return res.json(updateIncome);

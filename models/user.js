@@ -17,7 +17,7 @@ const userSchema = new mongoose.Schema({
 
 userSchema.index(
   { nickname: 1 },
-  { unique: true, collation: { locale: "en", strength: 2 } }
+  { unique: true, collation: { locale: "en", strength: 2 } },
 );
 
 export default mongoose.model("User", userSchema);

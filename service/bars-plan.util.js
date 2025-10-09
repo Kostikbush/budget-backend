@@ -36,7 +36,7 @@ export function sumPlanned(docs, from, to, getAnchor) {
       freq,
       fromDay,
       toDay,
-      end
+      end,
     );
 
     // Добавляем первое списание в день создания,
@@ -70,7 +70,7 @@ const baseWindowMatch = (budgetId, from, to, extra = {}) => ({
 // Доходы (берём все, сдвиг восстановим в sumPlanned)
 export async function sumPlannedIncomes(from, to, budgetId) {
   const incomes = await IncomeModel.find(
-    baseWindowMatch(budgetId, from, to)
+    baseWindowMatch(budgetId, from, to),
   ).lean();
   return sumPlanned(incomes, from, to, (doc) => doc.date);
 }
@@ -78,7 +78,7 @@ export async function sumPlannedIncomes(from, to, budgetId) {
 // Расходы
 export async function sumPlannedExpenses(from, to, budgetId) {
   const expenses = await ExpenseModel.find(
-    baseWindowMatch(budgetId, from, to)
+    baseWindowMatch(budgetId, from, to),
   ).lean();
   console.log("expenses for sumPlannedExpenses:", expenses);
   return sumPlanned(expenses, from, to, (doc) => doc.date);
@@ -87,12 +87,12 @@ export async function sumPlannedExpenses(from, to, budgetId) {
 // Цели: только незавершённые
 export async function sumPlannedGoals(from, to, budgetId) {
   const goals = await GoalModel.find(
-    baseWindowMatch(budgetId, from, to, { isCompleted: false })
+    baseWindowMatch(budgetId, from, to, { isCompleted: false }),
   ).lean();
   return sumPlanned(
     goals,
     from,
     to,
-    (doc) => doc.dayOfMoneyWriteOff || doc.date
+    (doc) => doc.dayOfMoneyWriteOff || doc.date,
   );
 }

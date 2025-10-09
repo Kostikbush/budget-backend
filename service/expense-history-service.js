@@ -91,10 +91,10 @@ class ExpenseHistoryService {
         throw new Error("Недостаточно средств в бюджете");
       }
 
-      const isHealthy = budgetServiceUtils.simulateBudgetHealth(
-        budget,
+      const isHealthy = budgetServiceUtils.isBudgetHealthy(
+        budget.sum,
         incomes,
-        allExpenses
+        allExpenses,
       );
 
       if (!isHealthy) {
@@ -110,7 +110,7 @@ class ExpenseHistoryService {
         $set: {
           amount,
         },
-      }
+      },
     );
 
     return { type: "success" };

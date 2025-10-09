@@ -1,7 +1,6 @@
 import webpush from "web-push";
 import PushSubscription from "../models/pushSubscription.js";
 
-
 class PushService {
   async sendToUser(userId, payload) {
     const subs = await PushSubscription.find({ userId }).lean();
@@ -15,7 +14,7 @@ class PushService {
         try {
           await webpush.sendNotification(
             { endpoint: s.endpoint, keys: s.keys },
-            json
+            json,
           );
         } catch (e) {
           // 410/404 — подписка устарела/удалена на устройстве → чистим
@@ -25,10 +24,10 @@ class PushService {
             throw e;
           }
         }
-      })
+      }),
     );
 
-    const sent = results.filter(r => r.status === "fulfilled").length;
+    const sent = results.filter((r) => r.status === "fulfilled").length;
     return { sent };
   }
 

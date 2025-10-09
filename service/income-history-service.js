@@ -97,8 +97,8 @@ class IncomeHistoryService {
         throw new Error("Недостаточно средств в бюджете");
       }
 
-      const isHealthy = budgetServiceUtils.simulateBudgetHealth(
-        budget,
+      const isHealthy = budgetServiceUtils.isBudgetHealthy(
+        budget.sum,
         incomes,
         allExpenses,
       );
@@ -140,14 +140,14 @@ class IncomeHistoryService {
       throw new Error("Недостаточно средств в бюджете");
     }
 
-    const isHealthy = budgetServiceUtils.simulateBudgetHealth(
-      budget,
+    const isHealthy = budgetServiceUtils.isBudgetHealthy(
+      budget.sum,
       incomes,
       allExpenses,
     );
-
+    console.log({'budget.sum': budget.sum})
     if (!isHealthy) {
-      throw new Error("Бюджет станет отрицательным после изменения");
+      throw new Error("Бюджет станет отрицательным после удаления");
     }
 
     await budget.save();

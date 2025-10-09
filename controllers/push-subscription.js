@@ -10,17 +10,23 @@ export const subscribe = async (req, res) => {
   await pushSubscription.updateOne(
     { endpoint: sub.endpoint },
     { $set: { ...sub, userId } },
-    { upsert: true }
+    { upsert: true },
   );
 
-  return res.json({type: "success", message: "Вы успешно подписались на уведомления"});
-}
+  return res.json({
+    type: "success",
+    message: "Вы успешно подписались на уведомления",
+  });
+};
 
 export const unsubscribe = async (req, res) => {
   const { endpoint } = req.body || {};
   const userId = req.user?.sub;
-  
+
   if (endpoint) await pushSubscription.deleteOne({ endpoint });
   else if (userId) await pushSubscription.deleteMany({ userId });
-  return res.json({type: "success", message: "Вы успешно отписались от уведомлений"});
-}
+  return res.json({
+    type: "success",
+    message: "Вы успешно отписались от уведомлений",
+  });
+};

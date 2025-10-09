@@ -1,7 +1,6 @@
 import jwt from "jsonwebtoken";
 import tokenModel from "../models/token.js";
 
-
 /**
  * У меня сейчас запросы никак не защищены - любой кто знает id пользователя и endpoint может изменять данные любого пользователя
  *

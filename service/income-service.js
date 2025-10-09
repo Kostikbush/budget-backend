@@ -86,9 +86,7 @@ class IncomeService {
       (income) => income._id.toString() !== incomeId,
     );
 
-    if (
-      !budgetServiceUtils.simulateBudgetHealth(budget, newIncomes, allExpenses)
-    ) {
+    if (!budgetServiceUtils.isBudgetHealthy(budget.sum, newIncomes, allExpenses)) {
       throw new Error(
         "Удаляя доход бюджет уйдет в минус через некоторое время!",
       );
@@ -156,8 +154,8 @@ class IncomeService {
       await budgetService.getBudgetDetails(income.userId.toString());
 
     if (
-      !budgetServiceUtils.simulateBudgetHealth(
-        budget,
+      !budgetServiceUtils.isBudgetHealthy(
+        budget.sum,
         incomes.map((inc) => {
           if (inc._id.toString() === incomeId) {
             return {

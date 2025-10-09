@@ -39,7 +39,7 @@ router.get("/acceptExpense", expenseController.acceptExpense);
 router.get("/rejectExpense", expenseController.rejectExpense);
 router.get(
   "/availableSpendingLimits",
-  budgetController.getAvailableSpendingLimits
+  budgetController.getAvailableSpendingLimits,
 );
 router.get("/goals", goalController.getGoals);
 router.post("/createGoal", goalController.createGoal);
@@ -47,18 +47,18 @@ router.put("/updateGoal", goalController.updateGoal);
 router.delete("/deleteADebitGoal", goalController.deleteADebitGoal);
 router.delete(
   "/deleteAndReturnDebit",
-  goalController.deleteAmountFromGoalToBudget
+  goalController.deleteAmountFromGoalToBudget,
 );
 router.put(
   "/deductAmountFromGoalToBudget",
-  goalController.deductAmountFromGoalToBudget
+  goalController.deductAmountFromGoalToBudget,
 );
 router.put("/updateIncomeHistory", budgetController.updateIncomeHistory);
 router.put("/updateExpenseHistory", budgetController.updateExpenseHistory);
 router.delete("/deleteIncomeHistory", budgetController.deleteIncomeHistoryItem);
 router.delete(
   "/deleteExpenseHistory",
-  budgetController.deleteExpenseHistoryItem
+  budgetController.deleteExpenseHistoryItem,
 );
 router.get("/getUsersInBudget", budgetController.getUsersInBudget);
 router.get("/user", userController.getUser);

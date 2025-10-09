@@ -19,7 +19,7 @@ describe("simulateBudgetHealth", () => {
       { amount: 1000, frequency: "daily", date: today },
     ];
 
-    const result = budgetServiceUtils.simulateBudgetHealth(
+    const result = budgetServiceUtils.isBudgetHealthy(
       budget,
       incomes,
       expenses,
@@ -32,7 +32,7 @@ describe("simulateBudgetHealth", () => {
     const incomes = [{ amount: 80000, frequency: "monthly", date: today }];
     const expenses = [{ amount: 90000, frequency: "monthly", date: today }];
 
-    const result = budgetServiceUtils.simulateBudgetHealth(
+    const result = budgetServiceUtils.isBudgetHealthy(
       budget,
       incomes,
       expenses,
@@ -45,7 +45,7 @@ describe("simulateBudgetHealth", () => {
     const incomes = [{ amount: 1200, frequency: "yearly", date: today }];
     const expenses = [{ amount: 100, frequency: "monthly", date: today }];
 
-    const result = budgetServiceUtils.simulateBudgetHealth(
+    const result = budgetServiceUtils.isBudgetHealthy(
       budget,
       incomes,
       expenses,
@@ -63,7 +63,7 @@ describe("simulateBudgetHealth", () => {
     ];
 
     // Ожидаем, что прошлые даты не начнут с "-6 месяцев", а стартуют с текущего месяца
-    const result = budgetServiceUtils.simulateBudgetHealth(
+    const result = budgetServiceUtils.isBudgetHealthy(
       budget,
       incomes,
       expenses,
@@ -79,7 +79,7 @@ describe("simulateBudgetHealth", () => {
     const expenses = [{ amount: 2000, frequency: "monthly", date: today }];
 
     // первые 2 месяца расходов нет покрытия
-    const result = budgetServiceUtils.simulateBudgetHealth(
+    const result = budgetServiceUtils.isBudgetHealthy(
       budget,
       incomes,
       expenses,

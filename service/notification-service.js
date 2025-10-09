@@ -25,14 +25,13 @@ class NotificationService {
     });
 
     void pushService.safeSendToUser(String(recipientId), {
-      title: type === TypeNotification.newExpense
-        ? "Новый расход требует согласования"
-        : "Приглашение в бюджет",
+      title:
+        type === TypeNotification.newExpense
+          ? "Новый расход требует согласования"
+          : "Приглашение в бюджет",
       body: message,
       data: { url: "/" },
-      actions: [
-        { action: "open", title: "Открыть" }
-      ],
+      actions: [{ action: "open", title: "Открыть" }],
     });
   }
 

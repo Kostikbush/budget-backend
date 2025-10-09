@@ -11,9 +11,8 @@ class NotificationController {
         });
       }
 
-      const notifications = await notificationService.getUserNotifications(
-        userId
-      );
+      const notifications =
+        await notificationService.getUserNotifications(userId);
 
       res.json(notifications);
     } catch (e) {

@@ -65,10 +65,10 @@ class ExpenseService {
       throw new Error("В бюджете нет средств на этот расход");
     }
 
-    const isHealthy = budgetServiceUtils.simulateBudgetHealth(
-      budget,
+    const isHealthy = budgetServiceUtils.isBudgetHealthy(
+      budget.sum,
       incomes,
-      simulatedExpenses
+      simulatedExpenses,
     );
 
     if (!isHealthy) {
@@ -87,7 +87,7 @@ class ExpenseService {
           title,
           category,
         },
-        userId
+        userId,
       );
 
       return response;
@@ -116,9 +116,9 @@ class ExpenseService {
         recipientId,
         TypeNotification.newExpense,
         `Оппонент хочет добавить новый расход на ${budgetServiceUtils.formatNumberWithSpaces(
-          amount
+          amount,
         )}, согласны?`,
-        expense._id
+        expense._id,
       );
     }
 
@@ -134,12 +134,12 @@ class ExpenseService {
           title,
           category,
         },
-        userId
+        userId,
       );
 
       expense.date = budgetServiceUtils.getNextDateFromFrequency(
         date,
-        frequency
+        frequency,
       );
 
       await expense.save();
@@ -217,13 +217,13 @@ class ExpenseService {
       }
 
       const simulatedExpenses = allExpenses.filter(
-        (exp) => exp._id.toString() !== expenseId
+        (exp) => exp._id.toString() !== expenseId,
       );
 
-      const isHealthy = budgetServiceUtils.simulateBudgetHealth(
-        budget,
+      const isHealthy = budgetServiceUtils.isBudgetHealthy(
+        budget.sum,
         incomes,
-        simulatedExpenses
+        simulatedExpenses,
       );
 
       if (!isHealthy) {
@@ -241,7 +241,7 @@ class ExpenseService {
           title,
           category,
         },
-        userId
+        userId,
       );
 
       await notificationService.delete(expenseId);
@@ -269,10 +269,10 @@ class ExpenseService {
       ...goals,
     ];
 
-    const isHealthy = budgetServiceUtils.simulateBudgetHealth(
-      budget,
+    const isHealthy = budgetServiceUtils.isBudgetHealthy(
+      budget.sum,
       incomes,
-      simulatedExpenses
+      simulatedExpenses,
     );
 
     if (!isHealthy) {
@@ -301,7 +301,7 @@ class ExpenseService {
             title,
             category,
           },
-          userId
+          userId,
         );
       }
     }
@@ -325,7 +325,7 @@ class ExpenseService {
 async function updateExpenseHistoryCategory(expenseId, category) {
   await ExpenseHistoryModel.updateMany(
     { entityId: expenseId },
-    { $set: { category } }
+    { $set: { category } },
   );
 }
 

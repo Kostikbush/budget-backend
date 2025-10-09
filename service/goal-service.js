@@ -46,10 +46,10 @@ class GoalService {
     }
 
     if (isOnce) {
-      const isHealthy = budgetServiceUtils.simulateBudgetHealth(
-        { sum: sum - amount },
+      const isHealthy = budgetServiceUtils.isBudgetHealthy(
+        sum - amount,
         incomes,
-        allExpenses
+        allExpenses,
       );
 
       if (!isHealthy) {
@@ -70,7 +70,7 @@ class GoalService {
           title,
           type: "goal",
         },
-        userId
+        userId,
       );
 
       await GoalModel.create({
@@ -96,10 +96,10 @@ class GoalService {
       return { type: "success" };
     }
 
-    const isHealthy = budgetServiceUtils.simulateBudgetHealth(
-      { sum },
+    const isHealthy = budgetServiceUtils.isBudgetHealthy(
+      sum,
       incomes,
-      allExpenses.concat([{ amount, date: dayOfMoneyWriteOff, frequency }])
+      allExpenses.concat([{ amount, date: dayOfMoneyWriteOff, frequency }]),
     );
 
     if (!isHealthy) {
@@ -131,7 +131,7 @@ class GoalService {
 
       let minusSum = amount;
 
-      if (newGoal.targetAmount < newGoal.currentAmount) {
+      if (newGoal.targetAmount <= newGoal.currentAmount) {
         minusSum = newGoal.currentAmount - newGoal.targetAmount;
 
         newGoal.currentAmount = newGoal.targetAmount;
@@ -151,12 +151,12 @@ class GoalService {
           title,
           type: "goal",
         },
-        userId
+        userId,
       );
 
       newGoal.dayOfMoneyWriteOff = budgetServiceUtils.getNextDateFromFrequency(
         newGoal.dayOfMoneyWriteOff,
-        newGoal.frequency
+        newGoal.frequency,
       );
 
       await newGoal.save();
@@ -185,8 +185,8 @@ class GoalService {
       throw new Error("В бюджете нет средств на эту цель");
     }
 
-    const isHealthy = budgetServiceUtils.simulateBudgetHealth(
-      { sum },
+    const isHealthy = budgetServiceUtils.isBudgetHealthy(
+      sum,
       incomes,
       allExpenses.map((expense) => {
         if (expense.entityId === goalId) {
@@ -194,7 +194,7 @@ class GoalService {
         }
 
         return expense;
-      })
+      }),
     );
 
     if (!isHealthy) {
@@ -221,7 +221,7 @@ class GoalService {
         isCompleted: false,
         targetAmount,
       },
-      { new: true }
+      { new: true },
     );
 
     if (today) {
@@ -256,13 +256,13 @@ class GoalService {
             title,
             type: "goal",
           },
-          userId
+          userId,
         );
 
         updatedGoal.dayOfMoneyWriteOff =
           budgetServiceUtils.getNextDateFromFrequency(
             updatedGoal.dayOfMoneyWriteOff,
-            updatedGoal.frequency
+            updatedGoal.frequency,
           );
 
         await updatedGoal.save();
@@ -280,13 +280,13 @@ class GoalService {
           title,
           type: "goal",
         },
-        userId
+        userId,
       );
 
       updatedGoal.dayOfMoneyWriteOff =
         budgetServiceUtils.getNextDateFromFrequency(
           updatedGoal.dayOfMoneyWriteOff,
-          updatedGoal.frequency
+          updatedGoal.frequency,
         );
 
       await updatedGoal.save();
@@ -331,7 +331,7 @@ class GoalService {
         incomeId: null,
         frequency: goal.frequency,
       },
-      userId
+      userId,
     );
 
     await GoalModel.findByIdAndDelete(goalId);
@@ -356,7 +356,7 @@ class GoalService {
         incomeId: null,
         frequency: goal.frequency,
       },
-      goal.userId
+      goal.userId,
     );
 
     await goal.save();

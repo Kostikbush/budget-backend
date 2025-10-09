@@ -18,7 +18,7 @@ function getExpSec(token) {
   return d && typeof d.exp === "number" ? d.exp : null;
 }
 const ROTATE_BEFORE_SEC = Number(
-  process.env.REFRESH_TOKEN_EXPIRY || 30 * 24 * 60 * 60
+  process.env.REFRESH_TOKEN_EXPIRY || 30 * 24 * 60 * 60,
 );
 
 export const authMiddleware = async (req, res, next) => {

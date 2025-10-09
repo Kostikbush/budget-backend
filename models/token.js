@@ -9,7 +9,7 @@ const tokenSchema = new mongoose.Schema(
     userAgent: String,
     ip: String,
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 tokenSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });

@@ -15,7 +15,7 @@ const BudgetSchema = new Schema(
   },
   {
     timestamps: true,
-  }
+  },
 );
 
 export const BudgetModel = model("Budget", BudgetSchema);
