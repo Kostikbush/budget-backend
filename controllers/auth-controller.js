@@ -113,10 +113,8 @@ export const login = async (req, res) => {
     setRefreshCookie(res, refresh);
 
     const { password: _p, ...publicUser } = user.toObject();
-    console.log("ЛОГ ЧТОБ УВИДЕТЬ ЧТО ПРОИСХОДИТ С ОТВЕТОМ", { res });
     return res.json({ ...publicUser, type: "success" });
   } catch (err) {
-    console.log("Ошибка входа", err);
     res.json({ message: "Ошибка входа", type: "error" });
   }
 };

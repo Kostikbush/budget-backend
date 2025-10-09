@@ -35,6 +35,15 @@ class NotificationService {
     });
   }
 
+  async sendPushNotification(recipientId, title, message) {
+    void pushService.safeSendToUser(String(recipientId), {
+      title: title,
+      body: message,
+      data: { url: "/" },
+      actions: [{ action: "open", title: "Открыть" }],
+    });
+  }
+
   async delete(entityId) {
     await NotificationModel.findOneAndDelete({ entityId });
   }

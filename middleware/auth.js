@@ -43,9 +43,7 @@ export const authMiddleware = async (req, res, next) => {
     }
     // нет access или он протух — пробуем refresh
     const rt = req.cookies?.rt;
-    console.log("Refresh Token:", rt, req.cookies);
     if (!rt) {
-      console.log("AUTH_ERROR:");
       clearAuthCookies(res);
       return res
         .status(401)
@@ -54,7 +52,6 @@ export const authMiddleware = async (req, res, next) => {
 
     const r = jwt.verify(rt, process.env.JWT_REFRESH_SECRET); // {sub, jti, exp}
     const ok = await isRefreshActive(r.jti, r.sub);
-    console.log("New Refresh Token is Active:", ok);
     if (!ok) {
       clearAuthCookies(res);
       await revokeAllUserRefreshTokens(r.sub);

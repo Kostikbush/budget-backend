@@ -35,7 +35,6 @@ class UserController {
 
       res.json(user);
     } catch (e) {
-      console.log(e);
       res.json({ message: "Ошибка получения пользователя", type: "error" });
     }
   }

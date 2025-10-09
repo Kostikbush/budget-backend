@@ -80,7 +80,6 @@ export async function sumPlannedExpenses(from, to, budgetId) {
   const expenses = await ExpenseModel.find(
     baseWindowMatch(budgetId, from, to),
   ).lean();
-  console.log("expenses for sumPlannedExpenses:", expenses);
   return sumPlanned(expenses, from, to, (doc) => doc.date);
 }
 

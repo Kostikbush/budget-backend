@@ -74,7 +74,6 @@ class BudgetController {
 
       return res.json(result);
     } catch (error) {
-      console.log("Budget history error:", error);
       return res.json({
         message: error?.message ?? "Ошибка получения истории",
         type: "error",
@@ -120,16 +119,16 @@ class BudgetController {
         res.json({ message: "Некорректный ID пользователя", type: "error" });
         return;
       }
-
+      console.time("----------------метка---------------------");
       const limits = await budgetService.getAvailableSpendingLimits(
         userId,
         date,
         excludeId,
       );
-
-      res.json(limits);
+      console.timeEnd("----------------метка---------------------");
+      return res.json(limits);
     } catch (e) {
-      res.json({
+      return res.json({
         message: e?.message ?? "Ошибка получения лимитов",
         type: "error",
       });
