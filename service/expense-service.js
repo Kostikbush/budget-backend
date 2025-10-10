@@ -191,7 +191,6 @@ class ExpenseService {
       category = [],
     } = expenseData;
     let newDate = new Date(date);
-
     // Временный код
     if (category.length > 0) {
       await updateExpenseHistoryCategory(expenseId, category);
@@ -251,7 +250,6 @@ class ExpenseService {
       await ExpenseModel.findByIdAndDelete(expenseId);
 
       const recipientId = notificationService.getRecipeId(budget, userId);
-
       if (recipientId) {
         notificationService.sendPushNotification(
           recipientId,
@@ -316,6 +314,15 @@ class ExpenseService {
           userId,
         );
       }
+    }
+
+    const recipientId = notificationService.getRecipeId(budget, userId);
+    if (recipientId) {
+      notificationService.sendPushNotification(
+        recipientId,
+        `Пользователь изменил расход "${title}" на сумму ${amount}`,
+        "",
+      );
     }
 
     await ExpenseModel.findByIdAndUpdate(expense._id, {

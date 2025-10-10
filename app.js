@@ -73,7 +73,7 @@ app.use((err, req, res, next) => {
     if (!res.headersSent) {
       res.set("Vary", "Origin");
       const o = req.get("Origin");
-      if (o && allowed.has(o)) {
+      if (o && ALLOWED.has(o)) {
         res.set("Access-Control-Allow-Origin", o);
         res.set("Access-Control-Allow-Credentials", "true");
       }
