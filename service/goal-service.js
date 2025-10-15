@@ -4,6 +4,7 @@ import { budgetService, budgetServiceUtils } from "./budget-service.js";
 import { expenseHistoryService } from "./expense-history-service.js";
 import { incomeHistoryService } from "./income-history-service.js";
 import { ExpenseHistoryModel } from "../models/expenseHistory.js";
+import { getNextDateFromFrequency } from "../lib/date.js";
 
 class GoalService {
   async getGoals(userId) {
@@ -13,14 +14,26 @@ class GoalService {
     return { goals, type: "success" };
   }
 
-  async getActiveGoals(userId) {
-    const budget = (await budgetService.getUserBudget(userId)).budget;
-    const goals = await GoalModel.find({
-      budgetId: budget._id.toString(),
-      isCompleted: false,
-    });
+  async getActiveGoals(userId, budgetId, widthStandardField) {
+    let budgetIdFormat = budgetId ? budgetId?.toString() : null;
 
-    return { goals, type: "success" };
+    if (!budgetIdFormat) {
+      budgetIdFormat = (
+        await budgetService.getUserBudget(userId)
+      ).budget?._id?.toString();
+    }
+
+    const goals = (await GoalModel.find({
+      budgetId: budgetIdFormat,
+      isCompleted: false,
+    }).sort({ dayOfMoneyWriteOff: 1 }).lean()) ?? [];
+
+    return {
+      goals: widthStandardField
+        ? goals.map((goal) => ({ ...goal._doc, date: goal.dayOfMoneyWriteOff }))
+        : goals,
+      type: "success",
+    };
   }
 
   async createGoal(userId, goalData) {
@@ -46,7 +59,7 @@ class GoalService {
     }
 
     if (isOnce) {
-      const isHealthy = budgetServiceUtils.isBudgetHealthy(
+      const isHealthy = budgetServiceUtils.isBudgetHealthyV2(
         sum - amount,
         incomes,
         allExpenses,
@@ -96,7 +109,7 @@ class GoalService {
       return { type: "success" };
     }
 
-    const isHealthy = budgetServiceUtils.isBudgetHealthy(
+    const isHealthy = budgetServiceUtils.isBudgetHealthyV2(
       sum,
       incomes,
       allExpenses.concat([{ amount, date: dayOfMoneyWriteOff, frequency }]),
@@ -154,7 +167,7 @@ class GoalService {
         userId,
       );
 
-      newGoal.dayOfMoneyWriteOff = budgetServiceUtils.getNextDateFromFrequency(
+      newGoal.dayOfMoneyWriteOff = getNextDateFromFrequency(
         newGoal.dayOfMoneyWriteOff,
         newGoal.frequency,
       );
@@ -185,7 +198,7 @@ class GoalService {
       throw new Error("В бюджете нет средств на эту цель");
     }
 
-    const isHealthy = budgetServiceUtils.isBudgetHealthy(
+    const isHealthy = budgetServiceUtils.isBudgetHealthyV2(
       sum,
       incomes,
       allExpenses.map((expense) => {
@@ -260,7 +273,7 @@ class GoalService {
         );
 
         updatedGoal.dayOfMoneyWriteOff =
-          budgetServiceUtils.getNextDateFromFrequency(
+          getNextDateFromFrequency(
             updatedGoal.dayOfMoneyWriteOff,
             updatedGoal.frequency,
           );
@@ -284,7 +297,7 @@ class GoalService {
       );
 
       updatedGoal.dayOfMoneyWriteOff =
-        budgetServiceUtils.getNextDateFromFrequency(
+        getNextDateFromFrequency(
           updatedGoal.dayOfMoneyWriteOff,
           updatedGoal.frequency,
         );

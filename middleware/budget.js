@@ -7,6 +7,7 @@ import { GoalModel } from "../models/goal.js";
 import { incomeHistoryService } from "../service/income-history-service.js";
 import { expenseHistoryService } from "../service/expense-history-service.js";
 import goalService from "../service/goal-service.js";
+import { getNextDateFromFrequency } from "../lib/date.js";
 
 // --- Простой in-memory лок на один бюджет ---
 const locks = new Map();
@@ -84,7 +85,7 @@ export async function budgetSyncMiddleware(req, res, next) {
             },
           });
 
-          currentDate = budgetServiceUtils.getNextDateFromFrequency(
+          currentDate = getNextDateFromFrequency(
             currentDate,
             income.frequency,
           );
@@ -120,7 +121,7 @@ export async function budgetSyncMiddleware(req, res, next) {
             },
           });
 
-          currentDate = budgetServiceUtils.getNextDateFromFrequency(
+          currentDate = getNextDateFromFrequency(
             currentDate,
             expense.frequency,
           );
@@ -187,7 +188,7 @@ export async function budgetSyncMiddleware(req, res, next) {
           });
 
           newCurrent = nextAmount;
-          currentDate = budgetServiceUtils.getNextDateFromFrequency(
+          currentDate = getNextDateFromFrequency(
             currentDate,
             goal.frequency,
           );

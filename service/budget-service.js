@@ -6,13 +6,7 @@ import UserModel from "../models/user.js";
 import { notificationService } from "./notification-service.js";
 import { Types } from "mongoose";
 import {
-  addDays,
-  addWeeks,
-  addMonths,
   addYears,
-  isValid,
-  parseISO,
-  isBefore,
   startOfDay,
   isAfter,
   startOfMonth,
@@ -20,6 +14,7 @@ import {
   startOfYear,
   endOfYear,
   format,
+  endOfDay,
 } from "date-fns";
 import goalService from "./goal-service.js";
 import { expenseService } from "./expense-service.js";
@@ -30,6 +25,7 @@ import {
 } from "./bars-plan.util.js";
 import { incomeService } from "./income-service.js";
 import { Frequencies } from "../models/expense.js";
+import { getNextDateFromFrequency, sortByDateAsc, toDays } from "../lib/date.js";
 
 /**
  * @typedef {Object} Budget
@@ -248,17 +244,14 @@ class BudgetService {
    * @returns {Promise<{allExpenses,incomes,budget,type,goals}>} - Детальная информация о бюджете
    */
   async getBudgetDetails(userId) {
-    const expenses =
-      (await expenseService.getBudgetExpenses(userId))?.expenses || [];
     const budget = (await this.getUserBudget(userId))?.budget;
+    const expenses =
+      (await expenseService.getBudgetExpenses(userId, budget?._id))?.expenses ||
+      [];
     const incomes =
-      (await incomeService.getBudgetIncomes(userId)).incomes || [];
-    const goals = ((await goalService.getActiveGoals(userId)).goals || []).map(
-      (goal) => {
-        return { ...goal._doc, date: goal.dayOfMoneyWriteOff };
-      },
-    );
-
+      (await incomeService.getBudgetIncomes(userId, budget?._id)).incomes || [];
+    const goals = (await goalService.getActiveGoals(userId, budget?._id, true))?.goals || [];
+  
     return {
       allExpenses: [...expenses, ...goals],
       incomes,
@@ -498,131 +491,6 @@ class BudgetService {
   }
 }
 
-const DAYS_PER_YEAR = 365.2425;
-const DAYS_PER_MONTH = DAYS_PER_YEAR / 12;
-
-const FREQ_TO_DAY_FACTOR = {
-  daily: 1,
-  every_2_days: 2,
-  every_3_days: 3,
-  every_4_days: 4,
-  every_5_days: 5,
-  every_6_days: 6,
-  weekly: 7,
-  every_2_weeks: 14,
-  every_3_weeks: 21,
-  every_4_weeks: 28,
-  monthly: DAYS_PER_MONTH,
-  every_2_months: 2 * DAYS_PER_MONTH,
-  every_3_months: 3 * DAYS_PER_MONTH,
-  every_4_months: 4 * DAYS_PER_MONTH,
-  every_5_months: 5 * DAYS_PER_MONTH,
-  every_6_months: 6 * DAYS_PER_MONTH,
-  yearly: DAYS_PER_YEAR,
-  once: 0,
-};
-
-// 1) старт не «сегодня», а со следующего цикла
-function ceilToNextOccurrence(date, frequency) {
-  switch (frequency) {
-    case "daily":
-      return addDays(date, 1);
-    case "every_2_days":
-      return addDays(date, 2);
-    case "every_3_days":
-      return addDays(date, 3);
-    case "every_4_days":
-      return addDays(date, 4);
-    case "every_5_days":
-      return addDays(date, 5);
-    case "every_6_days":
-      return addDays(date, 6);
-    case "weekly":
-      return addWeeks(date, 1);
-    case "every_2_weeks":
-      return addWeeks(date, 2);
-    case "every_3_weeks":
-      return addWeeks(date, 3);
-    case "every_4_weeks":
-      return addWeeks(date, 4);
-    case "monthly":
-      return addMonths(date, 1);
-    case "every_2_months":
-      return addMonths(date, 2);
-    case "every_3_months":
-      return addMonths(date, 3);
-    case "every_4_months":
-      return addMonths(date, 4);
-    case "every_5_months":
-      return addMonths(date, 5);
-    case "every_6_months":
-      return addMonths(date, 6);
-    case "yearly":
-      return addYears(date, 1);
-    case "once":
-      return date; // одноразовый оставим как есть
-    default:
-      return addMonths(date, 1);
-  }
-}
-
-// 2) несколько фаз внутри периода (берём 3 точки)
-function getPhaseProbes(baseStart, frequency) {
-  if (frequency === "once") return [baseStart];
-
-  const periodDays = Math.max(
-    1,
-    Math.floor(FREQ_TO_DAY_FACTOR[frequency] ?? DAYS_PER_MONTH),
-  );
-  const step = Math.max(1, Math.floor(periodDays / 3)); // 3 «пробы»
-
-  return [0, 1, 2].map((i) => addDays(baseStart, i * step));
-}
-
-const toDays = (freq) => FREQ_TO_DAY_FACTOR[freq] ?? DAYS_PER_MONTH;
-
-const advanceAfter = (base, freq) => {
-  // гарантированно двигаем дальше, чем base (и на целый «шаг» частоты)
-  switch (freq) {
-    case "daily":
-      return startOfDay(addDays(base, 1));
-    case "every_2_days":
-      return startOfDay(addDays(base, 2));
-    case "every_3_days":
-      return startOfDay(addDays(base, 3));
-    case "every_4_days":
-      return startOfDay(addDays(base, 4));
-    case "every_5_days":
-      return startOfDay(addDays(base, 5));
-    case "every_6_days":
-      return startOfDay(addDays(base, 6));
-    case "weekly":
-      return startOfDay(addWeeks(base, 1));
-    case "every_2_weeks":
-      return startOfDay(addWeeks(base, 2));
-    case "every_3_weeks":
-      return startOfDay(addWeeks(base, 3));
-    case "every_4_weeks":
-      return startOfDay(addWeeks(base, 4));
-    case "monthly":
-      return startOfDay(addMonths(base, 1));
-    case "every_2_months":
-      return startOfDay(addMonths(base, 2));
-    case "every_3_months":
-      return startOfDay(addMonths(base, 3));
-    case "every_4_months":
-      return startOfDay(addMonths(base, 4));
-    case "every_5_months":
-      return startOfDay(addMonths(base, 5));
-    case "every_6_months":
-      return startOfDay(addMonths(base, 6));
-    case "yearly":
-      return startOfDay(addYears(base, 1));
-    default:
-      return startOfDay(addDays(base, 1));
-  }
-};
-
 class BudgetServiceUtils {
   isUserBudget(budget, userId) {
     if (!budget) {
@@ -640,220 +508,77 @@ class BudgetServiceUtils {
     return true;
   }
 
-  isBudgetHealthy(sum, incomes, expenses, years = 2) {
-    const startSum = sum;
-
-    const dailyIn = incomes.reduce((acc, i) => {
-      if (i.frequency === "once") return acc;
-      return acc + (Number(i.amount) || 0) / toDays(i.frequency);
-    }, 0);
-    const dailyOut = expenses.reduce((acc, e) => {
-      if (e.frequency === "once") return acc;
-      return acc + (Number(e.amount) || 0) / toDays(e.frequency);
-    }, 0);
-    if (dailyIn - dailyOut < 0) return false;
-
-    const toDate = (d) => startOfDay(d instanceof Date ? d : new Date(d));
-    const start = startOfDay(new Date());
-    const end = addYears(start, years);
-
-    const normalizeEvent = (ev, isIncome) => {
-      const freq = ev.frequency;
-      let nextDate = toDate(ev.date);
-
-      // прокручиваем вперёд до первого наступления >= start
-      if (isBefore(nextDate, start)) {
-        if (freq === "once") {
-          nextDate = null;
-        } else {
-          let guard = 0;
-          while (nextDate && isBefore(nextDate, start)) {
-            let nd = this.getNextDateFromFrequency(nextDate, freq);
-            nd = nd ? startOfDay(nd) : null;
-            if (!nd || !isAfter(nd, nextDate)) {
-              nd = advanceAfter(nextDate, freq);
-            }
-            nextDate = nd;
-            if (++guard > 10000) break;
-          }
-          if (nextDate && isAfter(nextDate, end)) nextDate = null;
-        }
-      } else {
-        nextDate = nextDate && isAfter(nextDate, end) ? null : nextDate;
-      }
-
-      return {
-        nextDate,
-        amount: Number(ev.amount) || 0,
-        frequency: freq,
-        isIncome: !!isIncome,
-      };
-    };
-
-    const incomeEvents = incomes.map((ev) => normalizeEvent(ev, true));
-    const expenseEvents = expenses.map((ev) => normalizeEvent(ev, false));
-    const all = incomeEvents.concat(expenseEvents);
-
-    if (all.every((e) => e.nextDate == null)) {
-      return sum >= 0 && sum >= startSum;
-    }
-
-    const sameDay = (a, b) =>
-      a.getFullYear() === b.getFullYear() &&
-      a.getMonth() === b.getMonth() &&
-      a.getDate() === b.getDate();
-
-    let iterations = 0;
-    const MAX_ITER = 200000;
-
-    while (true) {
-      if (++iterations > MAX_ITER) {
-        // аварийный стоп (чтобы не уронить бэкенд):
-        return false;
-      }
-
-      // ищем ближайшую дату
-      let nextTick = null;
-      for (const ev of all) {
-        if (ev.nextDate && (!nextTick || isBefore(ev.nextDate, nextTick))) {
-          nextTick = ev.nextDate;
-        }
-      }
-      if (!nextTick || isAfter(nextTick, end)) break;
-
-      for (const ev of all) {
-        if (ev.nextDate && ev.isIncome && sameDay(ev.nextDate, nextTick)) {
-          sum += ev.amount;
-        }
-      }
-      for (const ev of all) {
-        if (ev.nextDate && !ev.isIncome && sameDay(ev.nextDate, nextTick)) {
-          sum -= ev.amount;
-          if (sum < 0) return false;
-        }
-      }
-      for (const ev of all) {
-        if (ev.nextDate && sameDay(ev.nextDate, nextTick)) {
-          if (ev.frequency === "once") {
-            ev.nextDate = null;
-          } else {
-            let nd = this.getNextDateFromFrequency(ev.nextDate, ev.frequency);
-            nd = nd ? startOfDay(nd) : null;
-            if (!nd || !isAfter(nd, ev.nextDate)) {
-              nd = advanceAfter(ev.nextDate, ev.frequency);
-            }
-            if (!isAfter(nd, nextTick)) {
-              nd = advanceAfter(nextTick, ev.frequency);
-            }
-            ev.nextDate = isAfter(nd, end) ? null : nd;
-          }
-        }
-      }
-    }
-
-    return sum >= 0 && sum >= startSum;
+  getEventsFromExpenseAndIncomes(incomes, expenses) {
+    return (
+      incomes
+        .map((item) => ({ ...item, date: startOfDay(new Date(item.date)) }))
+        .concat(
+          expenses.map((expense) => ({
+            ...expense,
+            amount: -expense.amount,
+            date: endOfDay(new Date(expense.date)),
+          })),
+        ) || []
+    );
   }
 
-  /**
-   * @param {Object} budget - объект бюджета { sum: number }
-   * @param {Array} incomes - массив доходов с полями: amount, frequency, date
-   * @param {Array} expenses - массив расходов с полями: amount, frequency, date
-   * @param {number} years - на сколько лет вперед моделируем
-   * @returns {boolean} - true если бюджет не уходит в минус, иначе false
-   */
-  // simulateBudgetHealth(budget, incomes, expenses, years = 5) {
-  //   const today = startOfDay(new Date());
-  //   const end = addYears(today, years);
-  //   const events = [];
+  getEventsOnNYearsFuture(events, years = 5) {
+    const today = startOfDay(new Date());
+    const end = addYears(today, years);
+    const result = [];
 
-  //   const collect = (list, sign = 1) => {
-  //     for (const item of list) {
-  //       let currentDate = startOfDay(new Date(item.date));
-  //       if (isBefore(currentDate, today)) currentDate = today;
+    for (const event of events) {
+      // event.date - тут может быть только today или today+N дата
+      // эту гарантию дает middleware который при входе в приложение
+      // обновляет все расходы/доходы и таким образом использование
+      // isBudgetHealthyV2 происходит только на странице на которую
+      // пользователь не может попасть пока не обновиться бюджет через
+      // middleware
+      let currentDate = event.date;
+      
+      while (!isAfter(currentDate, end)) {
+        result.push({
+          date: new Date(currentDate).getTime(),
+          amount: event.amount,
+        });
 
-  //       while (!isAfter(currentDate, end)) {
-  //         events.push({
-  //           date: currentDate.getTime(),
-  //           amount: item.amount * sign,
-  //         });
-
-  //         if (item.frequency === "once") break;
-
-  //         currentDate = this.getNextDateFromFrequency(
-  //           currentDate,
-  //           item.frequency,
-  //         );
-  //       }
-  //     }
-  //   };
-
-  //   collect(incomes, +1);
-  //   collect(expenses, -1);
-
-  //   // Сортируем события по дате
-  //   events.sort((a, b) => a.date - b.date);
-
-  //   let sum = budget.sum;
-
-  //   for (const event of events) {
-  //     sum += event.amount;
-  //     if (sum < 0) return false;
-  //   }
-
-  //   return true;
-  // }
-
-  /**
-   * Возвращает следующую дату на основе частоты.
-   *
-   * @param {Date | string} startDate - Начальная дата (объект Date или строка ISO)
-   * @param {"once" | "daily" | "weekly" | "monthly" | "yearly"} frequency - Частота
-   * @returns {Date | null} - Следующая дата или null, если once или невалидная дата
-   */
-  getNextDateFromFrequency(startDate, frequency) {
-    const date =
-      typeof startDate === "string" ? parseISO(startDate) : startDate;
-
-    if (!isValid(date)) return null;
-
-    switch (frequency) {
-      case "daily":
-        return addDays(date, 1);
-      case "every_2_days":
-        return addDays(date, 2);
-      case "every_3_days":
-        return addDays(date, 3);
-      case "every_4_days":
-        return addDays(date, 4);
-      case "every_5_days":
-        return addDays(date, 5);
-      case "every_6_days":
-        return addDays(date, 6);
-      case "weekly":
-        return addWeeks(date, 1);
-      case "every_2_weeks":
-        return addWeeks(date, 2);
-      case "every_3_weeks":
-        return addWeeks(date, 3);
-      case "every_4_weeks":
-        return addWeeks(date, 4);
-      case "monthly":
-        return addMonths(date, 1);
-      case "every_2_months":
-        return addMonths(date, 2);
-      case "every_3_months":
-        return addMonths(date, 3);
-      case "every_4_months":
-        return addMonths(date, 4);
-      case "every_5_months":
-        return addMonths(date, 5);
-      case "every_6_months":
-        return addMonths(date, 6);
-      case "yearly":
-        return addYears(date, 1);
-      default:
-        return null;
+        currentDate = getNextDateFromFrequency(
+          currentDate,
+          event.frequency, // тут могут быть все кроме once - это гарантировано тем
+          // что невозможно создать расход с частотой once,
+        );
+      }
     }
+
+    return result;
+  }
+
+  isBudgetHealthyV2(sum = 0, incomes, expenses, years = 3) {
+    const perDay = (list) =>
+      (list || []).reduce((acc, ev) => {
+        const d = toDays(ev.frequency);
+        if (!Number.isFinite(d) || d <= 0) return acc;
+        const amt = Number(ev.amount) || 0;
+        return acc + amt / d;
+      }, 0);
+
+    const dailyIn = perDay(incomes);
+    const dailyOut = perDay(expenses);
+    console.log({dailyIn, dailyOut})
+    if (dailyIn - dailyOut < 0) return false;
+    const events = this.getEventsFromExpenseAndIncomes(incomes, expenses);
+    const allFutureEvents = this.getEventsOnNYearsFuture(events, years);
+
+    const sortedEvents = sortByDateAsc(allFutureEvents);
+    // симуляция движения суммы, с провалом при любом отрицательном балансе
+    let currentSum = sum;
+    for (const ev of sortedEvents) {
+
+      currentSum += ev.amount;
+      if (currentSum < 0) return false;
+    }
+
+    return currentSum >= sum;
   }
 
   getAvailableSpendingLimits(
@@ -862,128 +587,77 @@ class BudgetServiceUtils {
     incomes,
     options = { date: new Date(), excludeId: null },
   ) {
-    const resultRaw = {};
-    const MAX_CEIL = 100_000_000;
     const { excludeId, date } = options;
+    const startSum = budget?.sum || 0;
 
-    const filteredIncomes = incomes.filter((i) => i.frequency !== "once");
-    const filteredExpenses = excludeId
-      ? expenses.filter((e) => e._id?.toString() !== excludeId)
-      : expenses;
+    // исключаем редактируемый расход, если нужно
+    const baseExpenses = excludeId
+      ? (expenses || []).filter(
+          (e) => e?._id?.toString?.() !== String(excludeId),
+        )
+      : expenses || [];
 
-    // --- NEW: считаем доступный устойчивый поток (в сутки) без новой траты
-    const dailyIn = filteredIncomes.reduce(
-      (acc, i) => acc + (Number(i.amount) || 0) / toDays(i.frequency),
-      0,
-    );
-    const dailyOutNow = filteredExpenses.reduce((acc, e) => {
-      if (e.frequency === "once") return acc;
-      return acc + (Number(e.amount) || 0) / toDays(e.frequency);
-    }, 0);
+    const result = {};
+    const START_HIGH = 10_000_000; // как и хотел — начинаем с 10 млн
+    const startDate = new Date(date);
 
-    const dailyNet = Math.max(0, dailyIn - dailyOutNow); // сколько в сутки можно добавить без деградации тренда
-
-    // --- Потоковая крышка по всем частотам
-    const flowCap = {};
-    for (const f of Frequencies) {
-      if (f === "once") continue;
-      flowCap[f] = Math.floor(dailyNet * toDays(f));
-    }
-    // для "once": разумно ограничить подушкой и месячной потоковой крышкой
-    flowCap.once = Math.min(
-      Math.floor(dailyNet * DAYS_PER_MONTH), // эквивалент «месячного тренда»
-      Math.max(0, Number(budget.sum) || 0), // и фактическая подушка
-    );
-    // симуляция на конкретную дату
-    const simulateWithAtDate = (frequency, amount, startDate) => {
-      const simulatedExpenses = filteredExpenses.concat([
-        { amount, frequency, date: startDate },
-      ]);
-
-      return this.isBudgetHealthy(
-        budget.sum,
-        filteredIncomes,
-        simulatedExpenses,
-      );
-    };
-
-    // симуляция, проходящая все фазы периода
-    const simulateWith = (frequency, amount) => {
-      // --- NEW: ранний отсев по потоковой крышке
-      const cap = flowCap[frequency] ?? MAX_CEIL;
-      if (amount > cap) return false;
-
-      const baseStart = ceilToNextOccurrence(date, frequency);
-      const probes = getPhaseProbes(baseStart, frequency);
-      for (const startDate of probes) {
-  
-        if (!simulateWithAtDate(frequency, amount, startDate)) return false;
-      }
-      return true;
-    };
-
-    const binSearch = (frequency) => {
+    for (const freq of Frequencies) {
       let low = 0;
-      // --- NEW: ограничим верх бинпоиска потоковой крышей
-      let high = Math.min(MAX_CEIL, flowCap[frequency] ?? MAX_CEIL);
+      let high = START_HIGH;
       let best = 0;
+
+      if (freq === "once") {
+        // верхняя граница — текущая подушка (больше сразу не спишешь)
+        high = Math.max(0, Math.floor(startSum));
+
+        while (low <= high) {
+          const mid = (low + high) >> 1;
+          // одноразовое списание: уменьшаем sum, расходы не трогаем
+          const ok = this.isBudgetHealthyV2(
+            startSum - mid,
+            incomes || [],
+            baseExpenses,
+          );
+
+          if (ok) {
+            best = mid;
+            low = mid + 1;
+          } else {
+            high = mid - 1;
+          }
+        }
+
+        result.once = best;
+        continue;
+      }
+
+      // recurring частоты
       while (low <= high) {
+        
         const mid = (low + high) >> 1;
-        if (simulateWith(frequency, mid)) {
+
+        const simulatedExpenses = baseExpenses.concat([
+          { amount: mid, frequency: freq, date: startDate },
+        ]);
+        
+        const ok = this.isBudgetHealthyV2(
+          startSum,
+          incomes || [],
+          simulatedExpenses,
+        );
+       // console.log({low, high, mid, startSum, ok})
+        if (ok) {
           best = mid;
           low = mid + 1;
         } else {
           high = mid - 1;
         }
       }
-      return best;
-    };
 
-    // 1) базовый дневной
-    const baseDaily = binSearch("daily");
-
-    // 2) теоретика из daily (как у тебя)
-    const theoreticalFromDaily = {};
-    for (const f of Frequencies) {
-      if (f === "once") {
-        theoreticalFromDaily[f] = Math.floor(baseDaily * DAYS_PER_MONTH);
-      } else {
-        theoreticalFromDaily[f] = Math.floor(baseDaily * toDays(f));
-      }
+      result[freq] = best;
     }
 
-    // 3) бинпоиск + min со всеми крышами (daily-деривация и поток)
-    const result = {};
-    for (const f of Frequencies) {
-      const raw = binSearch(f);
-      resultRaw[f] = raw;
-      const caps = [raw, theoreticalFromDaily[f]];
-      if (flowCap[f] != null) caps.push(flowCap[f]);
-      result[f] = Math.min(...caps);
-    }
-
-    // 4) монотонность (как было)
-    const cap = (f, capVal) => {
-      if (result[f] > capVal) result[f] = capVal;
-    };
-    cap("weekly", result.daily * 7);
-    cap("every_2_weeks", result.weekly * 2);
-    cap("every_3_weeks", result.weekly * 3);
-    cap("every_4_weeks", result.weekly * 4);
-    cap("monthly", Math.floor(result.daily * DAYS_PER_MONTH));
-    cap("every_2_months", result.monthly * 2);
-    cap("every_3_months", result.monthly * 3);
-    cap("every_4_months", result.monthly * 4);
-    cap("every_5_months", result.monthly * 5);
-    cap("every_6_months", result.monthly * 6);
-    cap("yearly", result.monthly * 12);
     return result;
-  }
-
-  formatNumberWithSpaces(num, startStr) {
-    const resString = num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ");
-
-    return startStr ? `${startStr} ${resString}` : resString;
   }
 }
 

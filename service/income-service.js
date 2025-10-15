@@ -5,6 +5,7 @@ import { budgetService, budgetServiceUtils } from "./budget-service.js";
 import { ExpenseModel } from "../models/expense.js";
 import { isToday } from "date-fns";
 import { IncomeHistoryModel } from "../models/incomeHistory.js";
+import { getNextDateFromFrequency } from "../lib/date.js";
 
 /**
  * Сервис для работы с доходами
@@ -52,7 +53,7 @@ class IncomeService {
         userId,
       );
 
-      nextDate = budgetServiceUtils.getNextDateFromFrequency(date, frequency);
+      nextDate = getNextDateFromFrequency(date, frequency);
     }
 
     await IncomeModel.create({
@@ -87,7 +88,7 @@ class IncomeService {
     );
 
     if (
-      !budgetServiceUtils.isBudgetHealthy(budget.sum, newIncomes, allExpenses)
+      !budgetServiceUtils.isBudgetHealthyV2(budget.sum, newIncomes, allExpenses)
     ) {
       throw new Error(
         "Удаляя доход бюджет уйдет в минус через некоторое время!",
@@ -101,18 +102,22 @@ class IncomeService {
 
   /**
    * Возвращает список доходов для бюджета
-   * @param {string} budgetId - ID бюджета
    * @param {string} userId - ID пользователя
+   * @param {string} budgetId - ID бюджета
    * @returns {Promise<{type: string; incomes: Array}>} - Список доходов
    */
-  async getBudgetIncomes(userId) {
-    const budget = await budgetService.getUserBudget(userId);
+  async getBudgetIncomes(userId, budgetId) {
+    let budgetIdFormat = budgetId ? budgetId?.toString() : null;
+
+    if (!budgetIdFormat) {
+      budgetIdFormat = (
+        await budgetService.getUserBudget(userId)
+      ).budget?._id?.toString();
+    }
 
     const incomes = await IncomeModel.find({
-      budgetId: budget.budget._id.toString(),
-    }).sort({
-      createdAt: 1,
-    });
+      budgetId: budgetIdFormat,
+    }).sort({ date: 1 }).lean();
 
     return { incomes, type: "success" };
   }
@@ -156,7 +161,7 @@ class IncomeService {
       await budgetService.getBudgetDetails(income.userId.toString());
 
     if (
-      !budgetServiceUtils.isBudgetHealthy(
+      !budgetServiceUtils.isBudgetHealthyV2(
         budget.sum,
         incomes.map((inc) => {
           if (inc._id.toString() === incomeId) {
@@ -181,7 +186,7 @@ class IncomeService {
         incomeId: incomeId,
       }).sort({ createdAt: -1 });
 
-      nextDate = budgetServiceUtils.getNextDateFromFrequency(date, frequency);
+      nextDate = getNextDateFromFrequency(date, frequency);
 
       if (!isToday(lastHistoryIncome.date)) {
         await incomeHistoryService.create(

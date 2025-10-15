@@ -91,7 +91,7 @@ class ExpenseHistoryService {
         throw new Error("Недостаточно средств в бюджете");
       }
 
-      const isHealthy = budgetServiceUtils.isBudgetHealthy(
+      const isHealthy = budgetServiceUtils.isBudgetHealthyV2(
         budget.sum,
         incomes,
         allExpenses,

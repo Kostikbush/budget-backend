@@ -5,6 +5,8 @@ import { ExpenseHistoryModel } from "../models/expenseHistory.js";
 import { expenseHistoryService } from "./expense-history-service.js";
 import { TypeNotification } from "../models/notification.js";
 import { isToday } from "date-fns";
+import { formatNumberWithSpaces } from "../lib/number-utils.js";
+import { getNextDateFromFrequency } from "../lib/date.js";
 
 /**
  * Сервис для работы с расходами
@@ -25,14 +27,21 @@ class ExpenseService {
   /**
    * Получает все расходы для указанного бюджета
    * @param {string} userId - ID пользователя
+   * @param {string} budgetId - ID бюджета
    * @returns {Promise<Array>} - Список расходов
    */
-  async getBudgetExpenses(userId) {
-    const budget = (await budgetService.getUserBudget(userId)).budget;
+  async getBudgetExpenses(userId, budgetId) {
+    let budgetIdFormat = budgetId ? budgetId?.toString() : null;
+
+    if (!budgetIdFormat) {
+      budgetIdFormat = (
+        await budgetService.getUserBudget(userId)
+      ).budget?._id?.toString();
+    }
 
     const expenses = await ExpenseModel.find({
-      budgetId: budget._id.toString(),
-    }).sort({ date: 1 });
+      budgetId: budgetIdFormat,
+    }).sort({ date: 1 }).lean();
 
     return { expenses, type: "success" };
   }
@@ -67,7 +76,7 @@ class ExpenseService {
       throw new Error("В бюджете нет средств на этот расход");
     }
 
-    const isHealthy = budgetServiceUtils.isBudgetHealthy(
+    const isHealthy = budgetServiceUtils.isBudgetHealthyV2(
       isOnce ? budget.sum - amount : budget.sum,
       incomes,
       simulatedExpenses,
@@ -117,7 +126,7 @@ class ExpenseService {
         userId,
         recipientId,
         TypeNotification.newExpense,
-        `Оппонент хочет добавить новый расход на ${budgetServiceUtils.formatNumberWithSpaces(
+        `Оппонент хочет добавить новый расход на ${formatNumberWithSpaces(
           amount,
         )}, согласны?`,
         expense._id,
@@ -139,7 +148,7 @@ class ExpenseService {
         userId,
       );
 
-      expense.date = budgetServiceUtils.getNextDateFromFrequency(
+      expense.date = getNextDateFromFrequency(
         date,
         frequency,
       );
@@ -221,7 +230,7 @@ class ExpenseService {
         (exp) => exp._id.toString() !== expenseId,
       );
 
-      const isHealthy = budgetServiceUtils.isBudgetHealthy(
+      const isHealthy = budgetServiceUtils.isBudgetHealthyV2(
         budget.sum,
         incomes,
         simulatedExpenses,
@@ -279,7 +288,7 @@ class ExpenseService {
       ...goals,
     ];
 
-    const isHealthy = budgetServiceUtils.isBudgetHealthy(
+    const isHealthy = budgetServiceUtils.isBudgetHealthyV2(
       budget.sum,
       incomes,
       simulatedExpenses,
@@ -290,7 +299,7 @@ class ExpenseService {
     }
 
     if (isToday(date)) {
-      newDate = budgetServiceUtils.getNextDateFromFrequency(date, frequency);
+      newDate = getNextDateFromFrequency(date, frequency);
       if (budgetAmount - amount < 0) {
         throw new Error("В бюджете нет средств на этот расход");
       }
