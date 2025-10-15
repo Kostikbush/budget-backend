@@ -554,6 +554,7 @@ class BudgetServiceUtils {
   }
 
   isBudgetHealthyV2(sum = 0, incomes, expenses, years = 3) {
+    console.log("СТАРТ isBudgetHealthyV2")
     const perDay = (list) =>
       (list || []).reduce((acc, ev) => {
         const d = toDays(ev.frequency);
@@ -564,12 +565,13 @@ class BudgetServiceUtils {
 
     const dailyIn = perDay(incomes);
     const dailyOut = perDay(expenses);
-    console.log({dailyIn, dailyOut})
+      console.log("ПОДСЧЕТ ШАПКИ")
     if (dailyIn - dailyOut < 0) return false;
     const events = this.getEventsFromExpenseAndIncomes(incomes, expenses);
     const allFutureEvents = this.getEventsOnNYearsFuture(events, years);
 
     const sortedEvents = sortByDateAsc(allFutureEvents);
+    console.log("ПОДСЧЕТ НА N ЛЕТ")
     // симуляция движения суммы, с провалом при любом отрицательном балансе
     let currentSum = sum;
     for (const ev of sortedEvents) {
@@ -577,7 +579,7 @@ class BudgetServiceUtils {
       currentSum += ev.amount;
       if (currentSum < 0) return false;
     }
-
+    console.log("RETURN true | false")
     return currentSum >= sum;
   }
 
@@ -587,6 +589,7 @@ class BudgetServiceUtils {
     incomes,
     options = { date: new Date(), excludeId: null },
   ) {
+    console.log("СТАРТ ПОДСЧЕТА")
     const { excludeId, date } = options;
     const startSum = budget?.sum || 0;
 
@@ -613,6 +616,7 @@ class BudgetServiceUtils {
         while (low <= high) {
           const mid = (low + high) >> 1;
           // одноразовое списание: уменьшаем sum, расходы не трогаем
+              console.log("ВЫЗОВ isBudgetHealthyV2")
           const ok = this.isBudgetHealthyV2(
             startSum - mid,
             incomes || [],
@@ -639,13 +643,13 @@ class BudgetServiceUtils {
         const simulatedExpenses = baseExpenses.concat([
           { amount: mid, frequency: freq, date: startDate },
         ]);
-        
+        console.log("ВЫЗОВ isBudgetHealthyV2")
         const ok = this.isBudgetHealthyV2(
           startSum,
           incomes || [],
           simulatedExpenses,
         );
-       // console.log({low, high, mid, startSum, ok})
+
         if (ok) {
           best = mid;
           low = mid + 1;
@@ -656,7 +660,7 @@ class BudgetServiceUtils {
 
       result[freq] = best;
     }
-
+console.log("ВЕРНУЛ")
     return result;
   }
 }
