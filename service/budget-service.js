@@ -541,7 +541,7 @@ class BudgetServiceUtils {
       
       while (!isAfter(currentDate, end)) {
         count += 1;
-        if(count === 2000) {
+        if(count === 200000) {
           console.log("ОЧЕНЬ МНОГО ПОВТОРЕНИЙ", currentDate, end);
           throw new Error("Ошибка в подсчете бюджета");
         }
