@@ -537,15 +537,8 @@ class BudgetServiceUtils {
       // пользователь не может попасть пока не обновиться бюджет через
       // middleware
       let currentDate = event.date;
-      let count = 0;
       
-      while (!isAfter(currentDate, end)) {
-        count += 1;
-        if(count === 200000) {
-          console.log("ОЧЕНЬ МНОГО ПОВТОРЕНИЙ", currentDate, end);
-          throw new Error("Ошибка в подсчете бюджета");
-        }
-        console.log("ЦИКЛ while getEventsOnNYearsFuture", currentDate, end)
+      while (!isAfter(currentDate, end)) {        
         result.push({
           date: new Date(currentDate).getTime(),
           amount: event.amount,
