@@ -523,11 +523,13 @@ class BudgetServiceUtils {
   }
 
   getEventsOnNYearsFuture(events, years = 5) {
+    consol.log("START -> getEventsOnNYearsFuture")
     const today = startOfDay(new Date());
     const end = addYears(today, years);
     const result = [];
 
     for (const event of events) {
+      consol.log("ЦИКЛ FOR getEventsOnNYearsFuture")
       // event.date - тут может быть только today или today+N дата
       // эту гарантию дает middleware который при входе в приложение
       // обновляет все расходы/доходы и таким образом использование
@@ -537,6 +539,7 @@ class BudgetServiceUtils {
       let currentDate = event.date;
       
       while (!isAfter(currentDate, end)) {
+        consol.log("ЦИКЛ while getEventsOnNYearsFuture")
         result.push({
           date: new Date(currentDate).getTime(),
           amount: event.amount,
