@@ -565,11 +565,13 @@ class BudgetServiceUtils {
 
     const dailyIn = perDay(incomes);
     const dailyOut = perDay(expenses);
-      console.log("ПОДСЧЕТ ШАПКИ")
+    console.log("ПОДСЧЕТ ШАПКИ")
     if (dailyIn - dailyOut < 0) return false;
+    console.log("НАЧАЛО ПРОГНОЗА -> вызов getEventsFromExpenseAndIncomes")
     const events = this.getEventsFromExpenseAndIncomes(incomes, expenses);
+    console.log("НАЧАЛО ПРОГНОЗА -> вызов getEventsOnNYearsFuture")
     const allFutureEvents = this.getEventsOnNYearsFuture(events, years);
-
+    console.log("НАЧАЛО ПРОГНОЗА -> вызов sortByDateAsc")
     const sortedEvents = sortByDateAsc(allFutureEvents);
     console.log("ПОДСЧЕТ НА N ЛЕТ")
     // симуляция движения суммы, с провалом при любом отрицательном балансе
@@ -616,7 +618,7 @@ class BudgetServiceUtils {
         while (low <= high) {
           const mid = (low + high) >> 1;
           // одноразовое списание: уменьшаем sum, расходы не трогаем
-              console.log("ВЫЗОВ isBudgetHealthyV2")
+          console.log("ВЫЗОВ isBudgetHealthyV2 ДЛЯ ONCE")
           const ok = this.isBudgetHealthyV2(
             startSum - mid,
             incomes || [],
