@@ -529,7 +529,7 @@ class BudgetServiceUtils {
     const result = [];
 
     for (const event of events) {
-      console.log("ЦИКЛ FOR getEventsOnNYearsFuture")
+      console.log("ЦИКЛ FOR getEventsOnNYearsFuture", result[result.length-1])
       // event.date - тут может быть только today или today+N дата
       // эту гарантию дает middleware который при входе в приложение
       // обновляет все расходы/доходы и таким образом использование
@@ -537,7 +537,7 @@ class BudgetServiceUtils {
       // пользователь не может попасть пока не обновиться бюджет через
       // middleware
       let currentDate = event.date;
-      
+      console.log("!isAfter(currentDate, end)", !isAfter(currentDate, end))
       while (!isAfter(currentDate, end)) {        
         result.push({
           date: new Date(currentDate).getTime(),
@@ -551,7 +551,7 @@ class BudgetServiceUtils {
         );
       }
     }
-
+    console.log("ВЫ{ОД ")
     return result;
   }
 
