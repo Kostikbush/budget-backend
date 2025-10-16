@@ -541,11 +541,11 @@ class BudgetServiceUtils {
       
       while (!isAfter(currentDate, end)) {
         count += 1;
-        if(count === 20000000) {
-          console.log("ОЧЕНЬ МНОГО ПОВТОРЕНИЙ", currentDate, end,);
+        if(count === 2000) {
+          console.log("ОЧЕНЬ МНОГО ПОВТОРЕНИЙ", currentDate, end);
           throw new Error("Ошибка в подсчете бюджета");
         }
-        console.log("ЦИКЛ while getEventsOnNYearsFuture")
+        console.log("ЦИКЛ while getEventsOnNYearsFuture", currentDate, end)
         result.push({
           date: new Date(currentDate).getTime(),
           amount: event.amount,
