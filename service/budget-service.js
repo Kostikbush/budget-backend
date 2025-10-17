@@ -536,7 +536,10 @@ class BudgetServiceUtils {
       // пользователь не может попасть пока не обновиться бюджет через
       // middleware
       let currentDate = event.date;
-      while (!isAfter(currentDate, end)) {        
+      while (!isAfter(currentDate, end)) {    
+        if(!currentDate || !event.amount) {
+          throw new Error(`Невалидные данные в getEventsOnNYearsFuture ${event.amount}, ${currentDate}`);
+        }
         result.push({
           date: new Date(currentDate).getTime(),
           amount: event.amount,
@@ -546,15 +549,10 @@ class BudgetServiceUtils {
           currentDate,
           event.frequency, // тут могут быть все кроме once - это гарантировано тем
           // что невозможно создать расход с частотой once,
-        );
-        
-        if(!currentDate) {
-           console.log("new_currentDate", event)
-        }
-        
+        );        
       }
     }
-    console.log("ВЫ{ОД ")
+    console.log("ВЫХОД getEventsOnNYearsFuture")
     return result;
   }
 
@@ -574,7 +572,7 @@ class BudgetServiceUtils {
     if (dailyIn - dailyOut < 0) return false;
     console.log("НАЧАЛО ПРОГНОЗА -> вызов getEventsFromExpenseAndIncomes")
     const events = this.getEventsFromExpenseAndIncomes(incomes, expenses);
-    console.log("НАЧАЛО ПРОГНОЗА -> вызов getEventsOnNYearsFuture", events)
+    console.log("НАЧАЛО ПРОГНОЗА -> вызов getEventsOnNYearsFuture", events.filter((eve) => !eve.frequency || typeof eve.amount !== "number"), "<<<--- events")
     const allFutureEvents = this.getEventsOnNYearsFuture(events, years);
     console.log("НАЧАЛО ПРОГНОЗА -> вызов sortByDateAsc")
     const sortedEvents = sortByDateAsc(allFutureEvents);
@@ -646,7 +644,7 @@ class BudgetServiceUtils {
       while (low <= high) {
         
         const mid = (low + high) >> 1;
-        console.log("mid ------------->", mid, low, high, freq, date, baseExpenses, "mid <<<<<<-------------")
+        console.log("mid ------------->", {mid, low, high, freq, date}, baseExpenses.filter((ex) => !ex.frequency || typeof ex.amount !== "number"), "mid <<<<<<-------------")
         const simulatedExpenses = baseExpenses.concat([
           { amount: mid, frequency: freq, date: startDate },
         ]);
