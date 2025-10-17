@@ -544,14 +544,17 @@ class BudgetServiceUtils {
           amount: event.amount,
         });
 
-        currentDate = getNextDateFromFrequency(
+        const newDate = getNextDateFromFrequency(
           currentDate,
           event.frequency, // тут могут быть все кроме once - это гарантировано тем
           // что невозможно создать расход с частотой once,
         );
-        if(!currentDate) {
-           console.log("new_currentDate", {currentDate}, new Date(currentDate).getTime(),currentDate)
+        
+        if(!newDate) {
+           console.log("new_currentDate", {currentDate, newDate}, new Date(currentDate).getTime(),currentDate, event.frequency)
         }
+
+        currentDate = newDate;
         
       }
     }
