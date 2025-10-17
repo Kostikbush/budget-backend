@@ -30,7 +30,7 @@ class GoalService {
 
     return {
       goals: widthStandardField
-        ? goals.map((goal) => ({ ...goal._doc, date: goal.dayOfMoneyWriteOff }))
+        ? goals.map((goal) => ({ ...goal, date: goal.dayOfMoneyWriteOff }))
         : goals,
       type: "success",
     };

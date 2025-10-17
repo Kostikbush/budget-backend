@@ -61,7 +61,7 @@ class BudgetService {
   async getAvailableSpendingLimits(userId, date, excludeId = null) {
     const { budget, allExpenses, incomes } =
       await this.getBudgetDetails(userId);
-    console.log("budget", allExpenses.filter((ex) => !ex.frequency || typeof ex.amount !== "number"), "allExpenses <<<==== allExpenses");
+
     const response = budgetServiceUtils.getAvailableSpendingLimits(
       budget,
       allExpenses,
@@ -252,7 +252,7 @@ class BudgetService {
     const incomes =
       (await incomeService.getBudgetIncomes(userId, budget?._id)).incomes || [];
     const goals = (await goalService.getActiveGoals(userId, budget?._id, true))?.goals || [];
-  
+    
     return {
       allExpenses: [...expenses, ...goals],
       incomes,
