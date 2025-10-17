@@ -523,7 +523,6 @@ class BudgetServiceUtils {
   }
 
   getEventsOnNYearsFuture(events, years = 5) {
-    console.log("START -> getEventsOnNYearsFuture")
     const today = startOfDay(new Date());
     const end = addYears(today, years);
     const result = [];
@@ -552,12 +551,10 @@ class BudgetServiceUtils {
         );        
       }
     }
-    console.log("ВЫХОД getEventsOnNYearsFuture")
     return result;
   }
 
   isBudgetHealthyV2(sum = 0, incomes, expenses, years = 3) {
-    console.log("СТАРТ isBudgetHealthyV2")
     const perDay = (list) =>
       (list || []).reduce((acc, ev) => {
         const d = toDays(ev.frequency);
@@ -568,15 +565,10 @@ class BudgetServiceUtils {
 
     const dailyIn = perDay(incomes);
     const dailyOut = perDay(expenses);
-    console.log("ПОДСЧЕТ ШАПКИ")
     if (dailyIn - dailyOut < 0) return false;
-    console.log("НАЧАЛО ПРОГНОЗА -> вызов getEventsFromExpenseAndIncomes")
     const events = this.getEventsFromExpenseAndIncomes(incomes, expenses);
-    console.log("НАЧАЛО ПРОГНОЗА -> вызов getEventsOnNYearsFuture", events.filter((eve) => !eve.frequency || typeof eve.amount !== "number"), "<<<--- events", 'expenses ===>>>', expenses.filter((ex) => !ex.frequency || typeof ex.amount !== "number"), '<<<=== expenses',)
     const allFutureEvents = this.getEventsOnNYearsFuture(events, years);
-    console.log("НАЧАЛО ПРОГНОЗА -> вызов sortByDateAsc")
     const sortedEvents = sortByDateAsc(allFutureEvents);
-    console.log("ПОДСЧЕТ НА N ЛЕТ")
     // симуляция движения суммы, с провалом при любом отрицательном балансе
     let currentSum = sum;
     for (const ev of sortedEvents) {
@@ -584,7 +576,7 @@ class BudgetServiceUtils {
       currentSum += ev.amount;
       if (currentSum < 0) return false;
     }
-    console.log("RETURN true | false")
+
     return currentSum >= sum;
   }
 
@@ -642,13 +634,15 @@ class BudgetServiceUtils {
 
       // recurring частоты
       while (low <= high) {
-        
         const mid = (low + high) >> 1;
+        //////////////
         console.log("mid ------------->", {mid, low, high, freq, date}, baseExpenses.filter((ex) => !ex.frequency || typeof ex.amount !== "number"), "mid <<<<<<-------------")
         const simulatedExpenses = baseExpenses.concat([
           { amount: mid, frequency: freq, date: startDate },
         ]);
-        console.log("ВЫЗОВ isBudgetHealthyV2")
+          //////////////
+        console.log("НАЧАЛО ПРОГНОЗА -> вызов isBudgetHealthyV2", 'expenses ===>>>', simulatedExpenses.filter((ex) => !ex.frequency || typeof ex.amount !== "number"), '<<<=== expenses',)
+          //////////////
         const ok = this.isBudgetHealthyV2(
           startSum,
           incomes || [],
