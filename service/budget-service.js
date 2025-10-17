@@ -61,6 +61,7 @@ class BudgetService {
   async getAvailableSpendingLimits(userId, date, excludeId = null) {
     const { budget, allExpenses, incomes } =
       await this.getBudgetDetails(userId);
+    console.log("budget", allExpenses.filter((ex) => !ex.frequency || typeof ex.amount !== "number"), "allExpenses <<<==== allExpenses");
     const response = budgetServiceUtils.getAvailableSpendingLimits(
       budget,
       allExpenses,
@@ -586,7 +587,6 @@ class BudgetServiceUtils {
     incomes,
     options = { date: new Date(), excludeId: null },
   ) {
-    console.log("СТАРТ ПОДСЧЕТА", expenses.filter((ex) => !ex.frequency || typeof ex.amount !== "number"), "<=================================")
     const { excludeId, date } = options;
     const startSum = budget?.sum || 0;
 
@@ -596,8 +596,6 @@ class BudgetServiceUtils {
           (e) => e?._id?.toString?.() !== String(excludeId),
         )
       : expenses || [];
-    
-    console.log("СТАРТ ПОДСЧЕТА __2 ", baseExpenses.filter((ex) => !ex.frequency || typeof ex.amount !== "number"), "<=================================")
 
     const result = {};
     const START_HIGH = 10_000_000; // как и хотел — начинаем с 10 млн
@@ -615,7 +613,6 @@ class BudgetServiceUtils {
         while (low <= high) {
           const mid = (low + high) >> 1;
           // одноразовое списание: уменьшаем sum, расходы не трогаем
-          console.log("ВЫЗОВ isBudgetHealthyV2 ДЛЯ ONCE")
           const ok = this.isBudgetHealthyV2(
             startSum - mid,
             incomes || [],
@@ -637,8 +634,6 @@ class BudgetServiceUtils {
       // recurring частоты
       while (low <= high) {
         const mid = (low + high) >> 1;
-        //////////////
-        console.log("mid ------------->", {mid, low, high, freq, date}, baseExpenses.filter((ex) => !ex.frequency || typeof ex.amount !== "number"), "mid <<<<<<-------------")
         const simulatedExpenses = baseExpenses.concat([
           { amount: mid, frequency: freq, date: startDate },
         ]);
