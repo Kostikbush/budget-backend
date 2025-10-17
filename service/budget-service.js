@@ -566,7 +566,7 @@ class BudgetServiceUtils {
 
     const dailyIn = perDay(incomes);
     const dailyOut = perDay(expenses);
-    console.log(`if (dailyIn - dailyOut < 0) return ${dailyIn - dailyOut < 0};`, )
+    console.log(`dailyIn - dailyOut < 0 = ${dailyIn - dailyOut < 0};`,{dailyIn, dailyOut} )
     if (dailyIn - dailyOut < 0) return false;
     const events = this.getEventsFromExpenseAndIncomes(incomes, expenses);
     const allFutureEvents = this.getEventsOnNYearsFuture(events, years);
