@@ -64,7 +64,7 @@ export const categories = [
 ];
 
 export const Frequencies = [
-  "once",
+  // "once",
   "daily",
   "every_2_days",
   "every_3_days",

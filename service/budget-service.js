@@ -515,7 +515,7 @@ class BudgetServiceUtils {
         .concat(
           expenses.map((expense) => ({
             ...expense,
-            amount: -expense.amount,
+            amount: -(expense.amount),
             date: endOfDay(new Date(expense.date)),
           })),
         ) || []
@@ -574,7 +574,7 @@ class BudgetServiceUtils {
     if (dailyIn - dailyOut < 0) return false;
     console.log("НАЧАЛО ПРОГНОЗА -> вызов getEventsFromExpenseAndIncomes")
     const events = this.getEventsFromExpenseAndIncomes(incomes, expenses);
-    console.log("НАЧАЛО ПРОГНОЗА -> вызов getEventsOnNYearsFuture", expenses)
+    console.log("НАЧАЛО ПРОГНОЗА -> вызов getEventsOnNYearsFuture", events)
     const allFutureEvents = this.getEventsOnNYearsFuture(events, years);
     console.log("НАЧАЛО ПРОГНОЗА -> вызов sortByDateAsc")
     const sortedEvents = sortByDateAsc(allFutureEvents);
@@ -646,7 +646,7 @@ class BudgetServiceUtils {
       while (low <= high) {
         
         const mid = (low + high) >> 1;
-        console.log("mid", mid, low, high, freq, date)
+        console.log("mid ------------->", mid, low, high, freq, date, baseExpenses, "mid <<<<<<-------------")
         const simulatedExpenses = baseExpenses.concat([
           { amount: mid, frequency: freq, date: startDate },
         ]);
