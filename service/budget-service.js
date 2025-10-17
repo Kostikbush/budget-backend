@@ -566,6 +566,7 @@ class BudgetServiceUtils {
 
     const dailyIn = perDay(incomes);
     const dailyOut = perDay(expenses);
+    console.log(`if (dailyIn - dailyOut < 0) return ${dailyIn - dailyOut < 0};`, )
     if (dailyIn - dailyOut < 0) return false;
     const events = this.getEventsFromExpenseAndIncomes(incomes, expenses);
     const allFutureEvents = this.getEventsOnNYearsFuture(events, years);
@@ -573,11 +574,11 @@ class BudgetServiceUtils {
     // симуляция движения суммы, с провалом при любом отрицательном балансе
     let currentSum = sum;
     for (const ev of sortedEvents) {
-
       currentSum += ev.amount;
+      console.log("for of cicle", currentSum, ev.amount, ev)
       if (currentSum < 0) return false;
     }
-
+    console.log(`currentSum >= sum = ${currentSum >= sum}`,)
     return currentSum >= sum;
   }
 
