@@ -551,7 +551,7 @@ class BudgetServiceUtils {
         );
         
         if(!newDate) {
-           console.log("new_currentDate", {currentDate, newDate}, new Date(currentDate).getTime(),currentDate, event.frequency)
+           console.log("new_currentDate", {currentDate, newDate}, new Date(currentDate).getTime(),currentDate, event)
         }
 
         currentDate = newDate;
