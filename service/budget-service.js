@@ -586,7 +586,7 @@ class BudgetServiceUtils {
     incomes,
     options = { date: new Date(), excludeId: null },
   ) {
-    console.log("СТАРТ ПОДСЧЕТА")
+    console.log("СТАРТ ПОДСЧЕТА", expenses.filter((ex) => !ex.frequency || typeof ex.amount !== "number"), "<=================================")
     const { excludeId, date } = options;
     const startSum = budget?.sum || 0;
 
@@ -596,6 +596,8 @@ class BudgetServiceUtils {
           (e) => e?._id?.toString?.() !== String(excludeId),
         )
       : expenses || [];
+    
+    console.log("СТАРТ ПОДСЧЕТА __2 ", baseExpenses.filter((ex) => !ex.frequency || typeof ex.amount !== "number"), "<=================================")
 
     const result = {};
     const START_HIGH = 10_000_000; // как и хотел — начинаем с 10 млн
@@ -640,9 +642,6 @@ class BudgetServiceUtils {
         const simulatedExpenses = baseExpenses.concat([
           { amount: mid, frequency: freq, date: startDate },
         ]);
-          //////////////
-        console.log("НАЧАЛО ПРОГНОЗА -> вызов isBudgetHealthyV2", 'expenses ===>>>', simulatedExpenses.filter((ex) => !ex.frequency || typeof ex.amount !== "number"), '<<<=== expenses',)
-          //////////////
         const ok = this.isBudgetHealthyV2(
           startSum,
           incomes || [],
