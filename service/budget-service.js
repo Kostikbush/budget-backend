@@ -572,7 +572,7 @@ class BudgetServiceUtils {
     if (dailyIn - dailyOut < 0) return false;
     console.log("НАЧАЛО ПРОГНОЗА -> вызов getEventsFromExpenseAndIncomes")
     const events = this.getEventsFromExpenseAndIncomes(incomes, expenses);
-    console.log("НАЧАЛО ПРОГНОЗА -> вызов getEventsOnNYearsFuture", events.filter((eve) => !eve.frequency || typeof eve.amount !== "number"), "<<<--- events")
+    console.log("НАЧАЛО ПРОГНОЗА -> вызов getEventsOnNYearsFuture", events.filter((eve) => !eve.frequency || typeof eve.amount !== "number"), "<<<--- events", 'expenses ===>>>', expenses.filter((ex) => !ex.frequency || typeof ex.amount !== "number"), '<<<=== expenses',)
     const allFutureEvents = this.getEventsOnNYearsFuture(events, years);
     console.log("НАЧАЛО ПРОГНОЗА -> вызов sortByDateAsc")
     const sortedEvents = sortByDateAsc(allFutureEvents);
