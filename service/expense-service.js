@@ -200,14 +200,9 @@ class ExpenseService {
       category = [],
     } = expenseData;
     let newDate = new Date(date);
-    // Временный код
-    if (category.length > 0) {
-      await updateExpenseHistoryCategory(expenseId, category);
-    }
-    // Временный код заканчивается
 
     const expense = await ExpenseModel.findById(expenseId);
-    const { budget, allExpenses, goals, incomes } =
+    const { budget, allExpenses, incomes } =
       await budgetService.getBudgetDetails(userId);
     const budgetAmount = budget?.sum ?? 0;
 
@@ -282,10 +277,8 @@ class ExpenseService {
             frequency,
           };
         }
-
         return exp;
       }),
-      ...goals,
     ];
 
     const isHealthy = budgetServiceUtils.isBudgetHealthyV2(

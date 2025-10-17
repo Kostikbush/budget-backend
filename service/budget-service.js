@@ -555,7 +555,7 @@ class BudgetServiceUtils {
     return result;
   }
 
-  isBudgetHealthyV2(sum = 0, incomes, expenses, years = 3) {
+  isBudgetHealthyV2(sum = 0, incomes, expenses, years = 5) {
     const perDay = (list) =>
       (list || []).reduce((acc, ev) => {
         const d = toDays(ev.frequency);
