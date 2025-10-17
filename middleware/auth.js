@@ -23,6 +23,7 @@ const ROTATE_BEFORE_SEC = Number(
 
 export const authMiddleware = async (req, res, next) => {
   if (req.path.startsWith("/api/auth/")) return next();
+  let rToken = null;
 
   try {
     const at = req.cookies?.at;
@@ -51,6 +52,7 @@ export const authMiddleware = async (req, res, next) => {
     }
 
     const r = jwt.verify(rt, process.env.JWT_REFRESH_SECRET); // {sub, jti, exp}
+    rToken = r
     const ok = await isRefreshActive(r.jti, r.sub);
     if (!ok) {
       clearAuthCookies(res);
@@ -80,7 +82,7 @@ export const authMiddleware = async (req, res, next) => {
     return next();
   } catch (err) {
     clearAuthCookies(res);
-    await revokeAllUserRefreshTokens(r.sub);
+    await revokeAllUserRefreshTokens(rToken?.sub);
     console.error("Auth error:", err);
     return res
       .status(401)

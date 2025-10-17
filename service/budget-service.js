@@ -523,7 +523,7 @@ class BudgetServiceUtils {
     );
   }
 
-  getEventsOnNYearsFuture(events, years = 5) {
+  getEventsOnNYearsFuture(events, years = 3) {
     const today = startOfDay(new Date());
     const end = addYears(today, years);
     const result = [];
@@ -555,7 +555,7 @@ class BudgetServiceUtils {
     return result;
   }
 
-  isBudgetHealthyV2(sum = 0, incomes, expenses, years = 5) {
+  isBudgetHealthyV2(sum = 0, incomes, expenses, years = 3) {
     const perDay = (list) =>
       (list || []).reduce((acc, ev) => {
         const d = toDays(ev.frequency);
@@ -566,8 +566,9 @@ class BudgetServiceUtils {
 
     const dailyIn = perDay(incomes);
     const dailyOut = perDay(expenses);
-    console.log(`dailyIn - dailyOut < 0 = ${dailyIn - dailyOut < 0};`,{dailyIn, dailyOut} )
+
     if (dailyIn - dailyOut < 0) return false;
+
     const events = this.getEventsFromExpenseAndIncomes(incomes, expenses);
     const allFutureEvents = this.getEventsOnNYearsFuture(events, years);
     const sortedEvents = sortByDateAsc(allFutureEvents);
@@ -575,10 +576,9 @@ class BudgetServiceUtils {
     let currentSum = sum;
     for (const ev of sortedEvents) {
       currentSum += ev.amount;
-      console.log("for of cicle", currentSum, ev.amount, ev)
       if (currentSum < 0) return false;
     }
-    console.log(`currentSum >= sum = ${currentSum >= sum}`,)
+
     return currentSum >= sum;
   }
 
