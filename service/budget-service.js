@@ -539,7 +539,6 @@ class BudgetServiceUtils {
       let currentDate = event.date;
       console.log("!isAfter(currentDate, end)", !isAfter(currentDate, end))
       while (!isAfter(currentDate, end)) {        
-        console.log("while", !isAfter(currentDate, end), new Date(currentDate).getTime(),currentDate, end)
         result.push({
           date: new Date(currentDate).getTime(),
           amount: event.amount,
@@ -551,7 +550,7 @@ class BudgetServiceUtils {
           // что невозможно создать расход с частотой once,
         );
         if(!currentDate) {
-           console.log("new_currentDate", {currentDate})
+           console.log("new_currentDate", {currentDate}, new Date(currentDate).getTime(),currentDate)
         }
         
       }
