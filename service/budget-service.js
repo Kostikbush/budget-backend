@@ -529,7 +529,6 @@ class BudgetServiceUtils {
     const result = [];
 
     for (const event of events) {
-      console.log("ЦИКЛ FOR getEventsOnNYearsFuture", result[result.length-1])
       // event.date - тут может быть только today или today+N дата
       // эту гарантию дает middleware который при входе в приложение
       // обновляет все расходы/доходы и таким образом использование
@@ -537,24 +536,21 @@ class BudgetServiceUtils {
       // пользователь не может попасть пока не обновиться бюджет через
       // middleware
       let currentDate = event.date;
-      console.log("!isAfter(currentDate, end)", !isAfter(currentDate, end))
       while (!isAfter(currentDate, end)) {        
         result.push({
           date: new Date(currentDate).getTime(),
           amount: event.amount,
         });
 
-        const newDate = getNextDateFromFrequency(
+        currentDate = getNextDateFromFrequency(
           currentDate,
           event.frequency, // тут могут быть все кроме once - это гарантировано тем
           // что невозможно создать расход с частотой once,
         );
         
-        if(!newDate) {
-           console.log("new_currentDate", {currentDate, newDate}, new Date(currentDate).getTime(),currentDate, event)
+        if(!currentDate) {
+           console.log("new_currentDate", event)
         }
-
-        currentDate = newDate;
         
       }
     }
@@ -578,7 +574,7 @@ class BudgetServiceUtils {
     if (dailyIn - dailyOut < 0) return false;
     console.log("НАЧАЛО ПРОГНОЗА -> вызов getEventsFromExpenseAndIncomes")
     const events = this.getEventsFromExpenseAndIncomes(incomes, expenses);
-    console.log("НАЧАЛО ПРОГНОЗА -> вызов getEventsOnNYearsFuture")
+    console.log("НАЧАЛО ПРОГНОЗА -> вызов getEventsOnNYearsFuture", expenses)
     const allFutureEvents = this.getEventsOnNYearsFuture(events, years);
     console.log("НАЧАЛО ПРОГНОЗА -> вызов sortByDateAsc")
     const sortedEvents = sortByDateAsc(allFutureEvents);
@@ -650,7 +646,7 @@ class BudgetServiceUtils {
       while (low <= high) {
         
         const mid = (low + high) >> 1;
-
+        console.log("mid", mid, low, high, freq, date)
         const simulatedExpenses = baseExpenses.concat([
           { amount: mid, frequency: freq, date: startDate },
         ]);
@@ -671,7 +667,7 @@ class BudgetServiceUtils {
 
       result[freq] = best;
     }
-console.log("ВЕРНУЛ")
+    console.log("ВЕРНУЛ")
     return result;
   }
 }
