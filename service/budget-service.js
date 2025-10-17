@@ -550,7 +550,10 @@ class BudgetServiceUtils {
           event.frequency, // тут могут быть все кроме once - это гарантировано тем
           // что невозможно создать расход с частотой once,
         );
-        console.log("new_currentDate", {currentDate})
+        if(!currentDate) {
+           console.log("new_currentDate", {currentDate})
+        }
+        
       }
     }
     console.log("ВЫ{ОД ")
