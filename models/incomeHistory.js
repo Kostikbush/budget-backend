@@ -27,6 +27,7 @@ const incomeHistorySchema = new mongoose.Schema({
     default: "income",
     required: true,
   },
+  isConfirmed: { type: Boolean, default: false },
 });
 
 incomeHistorySchema.index(

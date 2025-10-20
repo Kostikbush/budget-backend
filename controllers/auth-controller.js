@@ -69,6 +69,8 @@ export const register = async (req, res) => {
       password: passwordHash,
       name,
       nickname: candidate,
+      isAdmin: false,
+      isPaid: false,
     });
 
     const payload = { sub: user._id.toString(), role: user.role };

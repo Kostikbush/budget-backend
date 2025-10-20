@@ -144,6 +144,7 @@ class ExpenseService {
           frequency,
           title,
           category,
+          isConfirmed: true,
         },
         userId,
       );
@@ -312,6 +313,7 @@ class ExpenseService {
             frequency,
             title,
             category,
+            isConfirmed: true,
           },
           userId,
         );
@@ -339,6 +341,9 @@ class ExpenseService {
     });
 
     return { type: "success" };
+  }
+  async deleteExpensesByBudgetId(budgetId) {
+    await ExpenseModel.deleteMany({ budgetId });
   }
 }
 

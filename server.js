@@ -2,6 +2,8 @@ import dotenv from "dotenv";
 import mongoose from "mongoose";
 import webpush from "web-push";
 import app from "./app.js";
+import { ExpenseHistoryModel } from "./models/expenseHistory.js";
+import { IncomeHistoryModel } from "./models/incomeHistory.js";
 
 dotenv.config();
 const PORT = process.env.PORT ?? 4000;

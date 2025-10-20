@@ -23,6 +23,7 @@ class IncomeHistoryService {
       frequency,
       date = new Date(),
       incomeId = null,
+      isConfirmed = false,
     } = incomeData;
 
     if (incomeId) {
@@ -48,6 +49,7 @@ class IncomeHistoryService {
         incomeId: incomeId,
         frequency: frequency,
         title: title,
+        isConfirmed: frequency === 'once' ? true : isConfirmed,
       });
 
       budget.sum += amount;
@@ -115,6 +117,7 @@ class IncomeHistoryService {
       {
         $set: {
           amount,
+          isConfirmed: true,
         },
       },
     );
@@ -153,6 +156,20 @@ class IncomeHistoryService {
     await budget.save();
 
     await IncomeHistoryModel.deleteOne({ _id: incomeHistoryId });
+
+    return { type: "success" };
+  }
+  async deleteIncomeHistoriesByBudgetId(budgetId) {
+    await IncomeHistoryModel.deleteMany({ budgetId });
+  }
+
+  async confirmAllIncomeHistoryItems(userId) {
+    const budget = (await budgetService.getUserBudget(userId)).budget;
+    
+    await IncomeHistoryModel.updateMany(
+          { budgetId: budget._id, isConfirmed: false },
+          { $set: { isConfirmed: true } },
+    );
 
     return { type: "success" };
   }

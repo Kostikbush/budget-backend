@@ -24,6 +24,7 @@ const expenseHistorySchema = new mongoose.Schema({
   title: { type: String, required: true },
   type: { type: String, enum: ["expense", "goal"], default: "expense" },
   category: { type: [String], enum: categories },
+  isConfirmed: { type: Boolean, default: false },
 });
 
 expenseHistorySchema.index(

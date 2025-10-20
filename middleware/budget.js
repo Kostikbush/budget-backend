@@ -6,7 +6,7 @@ import { ExpenseModel } from "../models/expense.js";
 import { GoalModel } from "../models/goal.js";
 import { incomeHistoryService } from "../service/income-history-service.js";
 import { expenseHistoryService } from "../service/expense-history-service.js";
-import goalService from "../service/goal-service.js";
+import {goalService} from "../service/goal-service.js";
 import { getNextDateFromFrequency } from "../lib/date.js";
 
 // --- Простой in-memory лок на один бюджет ---

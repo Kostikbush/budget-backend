@@ -15,6 +15,7 @@ class ExpenseHistoryService {
       date = new Date(),
       type = "expense",
       category = [],
+      isConfirmed = false,
     } = expenseData;
 
     if (entityId) {
@@ -47,6 +48,7 @@ class ExpenseHistoryService {
         scope,
         type,
         category,
+        isConfirmed: frequency === 'once' ? true : isConfirmed,
       });
 
       budget.sum -= amount;
@@ -109,6 +111,7 @@ class ExpenseHistoryService {
       {
         $set: {
           amount,
+          isConfirmed: true,
         },
       },
     );
@@ -132,6 +135,18 @@ class ExpenseHistoryService {
     await budget.save();
 
     await ExpenseHistoryModel.findByIdAndDelete(entityId);
+
+    return { type: "success" };
+  }
+  async deleteExpenseHistoriesByBudgetId(budgetId) {
+    await ExpenseHistoryModel.deleteMany({ budgetId });
+  }
+  async confirmAllExpenseHistoryItems(userId) {
+    const budget = (await budgetService.getUserBudget(userId)).budget;
+    await ExpenseHistoryModel.updateMany(
+      { budgetId: budget._id, isConfirmed: false },
+      { $set: { isConfirmed: true } },
+    );
 
     return { type: "success" };
   }

@@ -1,4 +1,4 @@
-import goalService from "../service/goal-service.js";
+import {goalService} from "../service/goal-service.js";
 
 class GoalController {
   async getGoals(req, res) {
@@ -132,6 +132,33 @@ class GoalController {
     } catch (error) {
       res.json({
         message: error?.message ?? "Ошибка удаления цели",
+        type: "error",
+      });
+    }
+  }
+  async pushAmountFromBudgetToGoal(req, res) {
+    try {
+      const { goalId, amount } = req.body;
+
+      const userId = req.user?.sub;
+
+      if (!userId) {
+        return res.json({
+          message: "Не передан id пользователя",
+          type: "error",
+        });
+      }
+
+      const response = await goalService.pushAmountFromBudgetToGoal(
+        userId,
+        goalId,
+        amount,
+      );
+
+      return res.json(response);
+    } catch (error) {
+      res.json({
+        message: error?.message ?? "Ошибка добавления денег на цель",
         type: "error",
       });
     }

@@ -1,5 +1,8 @@
 import { UserDto } from "../dtos/user-dto.js";
+import pushSubscription from "../models/pushSubscription.js";
 import UserModel from "../models/user.js";
+import tokenModel from "../models/token.js";
+import { budgetService } from "./budget-service.js";
 import { mailService } from "./mail-service.js";
 import { tokenService } from "./token-service.js";
 import bcrypt from "bcrypt";
@@ -30,6 +33,8 @@ class UserService {
       email,
       password: hashPassword,
       activationLink,
+      isAdmin: false,
+      isPaid: false,
     });
 
     const useDto = new UserDto(user);
@@ -57,14 +62,25 @@ class UserService {
       nickname: user.nickname,
     }));
   }
-  // email
-  // name
-  // password
-  // nickname
-  // budgets
-  // нужно чтоб возврщалось все кроме password
   async getUserById(id) {
     return UserModel.findById(id).select("-password");
+  }
+  async deleteUser(id) {
+    const user = await UserModel.findById(id);
+
+    if (!user) {
+      throw new Error("Пользователь не найден");
+    }
+
+    if (user.budgets.length > 0) {
+      await budgetService.deleteBudgetByUserId(id);
+    }
+
+    await pushSubscription.deleteMany({ userId: id });
+    await tokenModel.deleteMany({ userId: id });
+    await UserModel.findByIdAndDelete(id);
+
+    return { message: "Пользователь успешно удален", type: "success" };
   }
 }
 

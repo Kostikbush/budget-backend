@@ -1,5 +1,4 @@
 import mongoose from "mongoose";
-import bcrypt from "bcrypt";
 
 const userSchema = new mongoose.Schema({
   email: {
@@ -13,6 +12,8 @@ const userSchema = new mongoose.Schema({
   password: String,
   nickname: { type: String, required: true },
   budgets: [{ type: mongoose.Schema.Types.ObjectId, ref: "Budget" }],
+  isPaid: { type: Boolean, default: false },
+  isAdmin: { type: Boolean, default: false },
 });
 
 userSchema.index(

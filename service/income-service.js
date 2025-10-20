@@ -214,6 +214,9 @@ class IncomeService {
 
     return { updatedIncome, type: "success" };
   }
+  async deleteIncomesByBudgetId(budgetId) {
+    await IncomeModel.deleteMany({ budgetId });
+  }
 }
 
 export const incomeService = new IncomeService();

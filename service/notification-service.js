@@ -85,6 +85,35 @@ class NotificationService {
       ? budget.members[0]?._id.toString()
       : budget.owner.toString();
   }
-}
 
+  /**
+   * const notificationSchema = new mongoose.Schema({
+     ownerId: {
+       type: mongoose.Schema.Types.ObjectId,
+       ref: "User",
+       required: true,
+     },
+     recipientId: {
+       type: mongoose.Schema.Types.ObjectId,
+       ref: "User",
+       required: true,
+     },
+     type: {
+       type: String,
+       enum: [TypeNotification.invitation, TypeNotification.newExpense],
+       required: true,
+     },
+     message: { type: String, required: true },
+     isRead: { type: Boolean, default: false },
+     createdAt: { type: Date, default: Date.now, required: true },
+     entityId: { type: mongoose.Schema.Types.ObjectId },
+   });
+   */
+  async deleteNotificationsByBudgetId(userId) {
+    // удаляет все уведомления связанные с пользователем в поле ownerId или recipientId
+    await NotificationModel.deleteMany({
+      $or: [{ ownerId: userId }, { recipientId: userId }],
+    });
+  }
+}
 export const notificationService = new NotificationService();

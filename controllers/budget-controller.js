@@ -256,5 +256,110 @@ class BudgetController {
       });
     }
   }
+
+  async deleteBudgetByUserId(req, res) {
+    try {
+      const userId = req.user?.sub;
+
+      if (!userId) {
+        return res
+          .status(401)
+          .json({ message: "Необходима авторизация", type: "error" });
+      }
+
+      const response = await budgetService.deleteBudgetByUserId(userId);
+      res.json(response);
+    } catch (error) {
+      res.json({
+        message: error?.message ?? "Ошибка удаления бюджета пользователя",
+        type: "error",
+      });
+    }
+  }
+
+  async confirmExpenseHistoryItem(req, res) {
+    try {
+      const { id, amount } = req.body;
+      const userId = req.user?.sub;
+
+      if (!id || !userId) {
+        return res.json({ message: "Недостаточно данных", type: "error" });
+      }
+
+      const result = await expenseHistoryService.updateExpenseHistory(userId,
+        { amount, _id: id, isConfirmed: true }
+      );
+
+      return res.json(result);
+    } catch (error) {
+      return res.json({
+        message: error?.message ?? "Ошибка подтверждения элемента истории расходов",
+        type: "error",
+      });
+    }
+  }
+
+  async confirmIncomeHistoryItem(req, res) {
+    try {
+      const { id, amount } = req.body;
+      const userId = req.user?.sub;
+
+      if (!id || !userId) {
+        return res.json({ message: "Недостаточно данных", type: "error" });
+      }
+
+      const result = await incomeHistoryService.updateIncomeHistory(
+        userId,
+        { amount, _id: id, isConfirmed: true }
+      );
+
+      return res.json(result);
+    } catch (error) {
+      return res.json({
+        message: error?.message ?? "Ошибка подтверждения элемента истории доходов",
+        type: "error",
+      });
+    }
+  }
+  async confirmAllIncomeHistoryItems(req, res) {
+    try {
+      const userId = req.user?.sub;
+
+      if (!userId) {
+        return res.json({ message: "Недостаточно данных", type: "error" });
+      }
+
+      const result = await incomeHistoryService.confirmAllIncomeHistoryItems(
+        userId
+      );
+
+      return res.json(result);
+    } catch (error) {
+      return res.json({
+        message: error?.message ?? "Ошибка подтверждения всех элементов истории доходов",
+        type: "error",
+      });
+    }
+  }
+  async confirmAllExpenseHistoryItems(req, res) {
+    try {
+      const userId = req.user?.sub;
+
+      if (!userId) {
+        return res.json({ message: "Недостаточно данных", type: "error" });
+      }
+
+      const result = await expenseHistoryService.confirmAllExpenseHistoryItems(
+        userId
+      );
+
+      return res.json(result);
+    } catch (error) {
+      return res.json({
+        message: error?.message ?? "Ошибка подтверждения всех элементов истории расходов",
+        type: "error",
+      });
+    }
+  }
 }
 export default new BudgetController();

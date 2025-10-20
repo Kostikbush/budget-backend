@@ -65,4 +65,14 @@ router.get("/user", userController.getUser);
 router.get("/bars", budgetController.getBarsByUser);
 router.post("/subscribe", subscribe);
 router.post("/unsubscribe", unsubscribe);
+router.delete("/deleteUser", userController.deleteUser);
+router.delete("/deleteBudget", budgetController.deleteBudgetByUserId);
+router.put("/confirmIncomeHistoryItem", budgetController.confirmIncomeHistoryItem);
+router.put(
+  "/confirmExpenseHistoryItem",
+  budgetController.confirmExpenseHistoryItem,
+);
+router.put("/pushAmountFromBudgetToGoal", goalController.pushAmountFromBudgetToGoal);
+router.put("/confirmAllIncomeHistoryItems", budgetController.confirmAllIncomeHistoryItems);
+router.put("/confirmAllExpenseHistoryItems", budgetController.confirmAllExpenseHistoryItems);
 export default router;

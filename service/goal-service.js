@@ -413,6 +413,51 @@ class GoalService {
 
     return currentDate;
   }
-}
+  async pushAmountFromBudgetToGoal(userId, goalId, amount) {
+    const { allExpenses, budget, incomes } =
+      await budgetService.getBudgetDetails(userId);
+    const sum = budget.sum;
 
-export default new GoalService();
+    const goal = await GoalModel.findById(goalId);
+
+    if (!goal) {
+      throw new Error("Цель не найдена");
+    }
+
+    if (sum - amount < 0) {
+      throw new Error("В бюджете нет средств на эту цель");
+    }
+
+    const isHealthy = budgetServiceUtils.isBudgetHealthyV2(
+      sum - amount,
+      incomes,
+      allExpenses,
+    );
+
+    if (!isHealthy) {
+      throw new Error("При трате на эту цель бюджет уйдет в минус");
+    }
+
+    goal.currentAmount += amount;
+    await goal.save();
+
+    await expenseHistoryService.create(
+      {
+        amount,
+        entityId: goalId,
+        priority: 1,
+        scope: "shared",
+        frequency: goal.frequency,
+        title: goal.title,
+        type: "goal",
+      },
+      userId,
+    );
+
+    return { type: "success" };
+  }
+  async deleteGoalsByBudgetId(budgetId) {
+    await GoalModel.deleteMany({ budgetId });
+  }
+}
+export const goalService = new GoalService();

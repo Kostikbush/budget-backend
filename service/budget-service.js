@@ -16,7 +16,7 @@ import {
   format,
   endOfDay,
 } from "date-fns";
-import goalService from "./goal-service.js";
+import {goalService} from "./goal-service.js";
 import { expenseService } from "./expense-service.js";
 import {
   sumPlannedIncomes,
@@ -26,6 +26,8 @@ import {
 import { incomeService } from "./income-service.js";
 import { Frequencies } from "../models/expense.js";
 import { getNextDateFromFrequency, sortByDateAsc, toDays } from "../lib/date.js";
+import { expenseHistoryService } from "./expense-history-service.js";
+import { incomeHistoryService } from "./income-history-service.js";
 
 /**
  * @typedef {Object} Budget
@@ -225,6 +227,39 @@ class BudgetService {
     return { budget: budget || null, type: "success" };
   }
 
+  async deleteBudgetByUserId(userId) {
+    const budget = await BudgetModel.findOne({
+      $or: [{ owner: userId }, { "members._id": userId }],
+    });
+
+    await notificationService.deleteNotificationsByBudgetId(userId);
+   
+
+    if (!budget) {
+      throw new Error("Бюджет не найден");
+    }
+
+    const budgetId = budget._id;
+    // нужно удалить все сущности связанные с бюджетом
+    await expenseService.deleteExpensesByBudgetId(budgetId);
+    await incomeService.deleteIncomesByBudgetId(budgetId);
+    await goalService.deleteGoalsByBudgetId(budgetId);
+    await expenseHistoryService.deleteExpenseHistoriesByBudgetId(budgetId);
+    await incomeHistoryService.deleteIncomeHistoriesByBudgetId(budgetId);
+
+    // дальше удаляет id бюджета из пользователей
+    // для этого находим всех пользователей у которых есть id удаляемого бюджета
+    // Удаляем бюджет из списка бюджетов у пользователей
+    await UserModel.updateMany(
+      { budgets: budgetId },
+      { $pull: { budgets: budgetId } }
+    );
+
+    await BudgetModel.findByIdAndDelete(budgetId);
+
+    return { message: "Бюджет успешно удален", type: "success" };
+  }
+
   /**
    * Получает список приглашений пользователя
    * @param {string} userId - ID пользователя
@@ -252,7 +287,7 @@ class BudgetService {
     const incomes =
       (await incomeService.getBudgetIncomes(userId, budget?._id)).incomes || [];
     const goals = (await goalService.getActiveGoals(userId, budget?._id, true))?.goals || [];
-    
+
     return {
       allExpenses: [...expenses, ...goals],
       incomes,
@@ -333,6 +368,9 @@ class BudgetService {
     let incomes = [];
     let expenses = [];
     let hasMore = false;
+    const haveConfirmedIncomes = !!(await IncomeHistoryModel.exists({ budgetId, isConfirmed: false }))
+
+    const haveConfirmedExpenses = !!(await ExpenseHistoryModel.exists({ budgetId, isConfirmed: false }))
 
     if (type === "all") {
       incomes = await IncomeHistoryModel.find({ budgetId, ...dateFilter })
@@ -354,6 +392,8 @@ class BudgetService {
       return {
         items: combined,
         hasMore,
+        haveConfirmedIncomes,
+        haveConfirmedExpenses,
         nextCursor: combined.at(-1)?.date ?? null,
         type: "success",
       };
@@ -370,6 +410,8 @@ class BudgetService {
       return {
         items: incomes,
         hasMore,
+        haveConfirmedIncomes,
+        haveConfirmedExpenses,
         nextCursor: incomes.at(-1)?.date ?? null,
         type: "success",
       };
@@ -386,7 +428,37 @@ class BudgetService {
       return {
         items: expenses,
         hasMore,
+        haveConfirmedIncomes,
+        haveConfirmedExpenses,
         nextCursor: expenses.at(-1)?.date ?? null,
+        type: "success",
+      };
+    }
+    if(type === "notConfirmed") {
+      incomes = await IncomeHistoryModel.find({ budgetId, isConfirmed: false, ...dateFilter })
+        .sort({ date: -1 })
+        .limit(limit + 1);
+      expenses = await ExpenseHistoryModel.find({ budgetId, isConfirmed: false, ...dateFilter })
+        .sort({ date: -1 })
+        .limit(limit + 1);
+
+      let combined = [...incomes, ...expenses].sort(
+        (a, b) => b.date.getTime() - a.date.getTime(),
+      );
+
+      if (combined.length > limit) {
+        hasMore = true;
+        combined = combined.slice(0, limit);
+      }
+
+      console.log({combined});
+
+      return {
+        items: combined,
+        hasMore,
+        haveConfirmedIncomes,
+        haveConfirmedExpenses,
+        nextCursor: combined.at(-1)?.date ?? null,
         type: "success",
       };
     }
@@ -537,7 +609,7 @@ class BudgetServiceUtils {
       // middleware
       let currentDate = event.date;
       while (!isAfter(currentDate, end)) {    
-        if(!currentDate || !event.amount) {
+        if(!currentDate || typeof event?.amount != 'number') {
           throw new Error(`Невалидные данные в getEventsOnNYearsFuture ${event.amount}, ${currentDate}`);
         }
         result.push({
