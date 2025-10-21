@@ -16,13 +16,6 @@ async function ensureReady() {
         console.error("Mongo connect failed:", err);
         throw err;
       });
-
-    await ExpenseHistoryModel.updateMany({}, [
-      { $set: { isConfirmed: { $ifNull: ["$isConfirmed", false] } } },
-    ]);
-    await IncomeHistoryModel.updateMany({}, [
-      { $set: { isConfirmed: { $ifNull: ["$isConfirmed", false] } } },
-    ]);
   }
   return conn;
 }
