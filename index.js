@@ -1,8 +1,6 @@
 import mongoose from "mongoose";
 import webpush from "web-push";
 import app from "./app.js";
-import { ExpenseHistoryModel } from "./models/expenseHistory.js";
-import { IncomeHistoryModel } from "./models/incomeHistory.js";
 
 let conn;
 async function ensureReady() {
