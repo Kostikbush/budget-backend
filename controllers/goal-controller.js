@@ -1,4 +1,4 @@
-import {goalService} from "../service/goal-service.js";
+import { goalService } from "../service/goal-service.js";
 
 class GoalController {
   async getGoals(req, res) {

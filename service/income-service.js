@@ -117,7 +117,9 @@ class IncomeService {
 
     const incomes = await IncomeModel.find({
       budgetId: budgetIdFormat,
-    }).sort({ date: 1 }).lean();
+    })
+      .sort({ date: 1 })
+      .lean();
 
     return { incomes, type: "success" };
   }

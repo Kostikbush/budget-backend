@@ -16,7 +16,7 @@ import {
   format,
   endOfDay,
 } from "date-fns";
-import {goalService} from "./goal-service.js";
+import { goalService } from "./goal-service.js";
 import { expenseService } from "./expense-service.js";
 import {
   sumPlannedIncomes,
@@ -25,7 +25,11 @@ import {
 } from "./bars-plan.util.js";
 import { incomeService } from "./income-service.js";
 import { Frequencies } from "../models/expense.js";
-import { getNextDateFromFrequency, sortByDateAsc, toDays } from "../lib/date.js";
+import {
+  getNextDateFromFrequency,
+  sortByDateAsc,
+  toDays,
+} from "../lib/date.js";
 import { expenseHistoryService } from "./expense-history-service.js";
 import { incomeHistoryService } from "./income-history-service.js";
 
@@ -233,7 +237,6 @@ class BudgetService {
     });
 
     await notificationService.deleteNotificationsByBudgetId(userId);
-   
 
     if (!budget) {
       throw new Error("Бюджет не найден");
@@ -252,7 +255,7 @@ class BudgetService {
     // Удаляем бюджет из списка бюджетов у пользователей
     await UserModel.updateMany(
       { budgets: budgetId },
-      { $pull: { budgets: budgetId } }
+      { $pull: { budgets: budgetId } },
     );
 
     await BudgetModel.findByIdAndDelete(budgetId);
@@ -286,7 +289,9 @@ class BudgetService {
       [];
     const incomes =
       (await incomeService.getBudgetIncomes(userId, budget?._id)).incomes || [];
-    const goals = (await goalService.getActiveGoals(userId, budget?._id, true))?.goals || [];
+    const goals =
+      (await goalService.getActiveGoals(userId, budget?._id, true))?.goals ||
+      [];
 
     return {
       allExpenses: [...expenses, ...goals],
@@ -368,9 +373,15 @@ class BudgetService {
     let incomes = [];
     let expenses = [];
     let hasMore = false;
-    const haveConfirmedIncomes = !!(await IncomeHistoryModel.exists({ budgetId, isConfirmed: false }))
+    const haveConfirmedIncomes = !!(await IncomeHistoryModel.exists({
+      budgetId,
+      isConfirmed: false,
+    }));
 
-    const haveConfirmedExpenses = !!(await ExpenseHistoryModel.exists({ budgetId, isConfirmed: false }))
+    const haveConfirmedExpenses = !!(await ExpenseHistoryModel.exists({
+      budgetId,
+      isConfirmed: false,
+    }));
 
     if (type === "all") {
       incomes = await IncomeHistoryModel.find({ budgetId, ...dateFilter })
@@ -434,11 +445,19 @@ class BudgetService {
         type: "success",
       };
     }
-    if(type === "notConfirmed") {
-      incomes = await IncomeHistoryModel.find({ budgetId, isConfirmed: false, ...dateFilter })
+    if (type === "notConfirmed") {
+      incomes = await IncomeHistoryModel.find({
+        budgetId,
+        isConfirmed: false,
+        ...dateFilter,
+      })
         .sort({ date: -1 })
         .limit(limit + 1);
-      expenses = await ExpenseHistoryModel.find({ budgetId, isConfirmed: false, ...dateFilter })
+      expenses = await ExpenseHistoryModel.find({
+        budgetId,
+        isConfirmed: false,
+        ...dateFilter,
+      })
         .sort({ date: -1 })
         .limit(limit + 1);
 
@@ -451,7 +470,7 @@ class BudgetService {
         combined = combined.slice(0, limit);
       }
 
-      console.log({combined});
+      console.log({ combined });
 
       return {
         items: combined,
@@ -588,7 +607,7 @@ class BudgetServiceUtils {
         .concat(
           expenses.map((expense) => ({
             ...expense,
-            amount: -(expense.amount),
+            amount: -expense.amount,
             date: endOfDay(new Date(expense.date)),
           })),
         ) || []
@@ -608,9 +627,11 @@ class BudgetServiceUtils {
       // пользователь не может попасть пока не обновиться бюджет через
       // middleware
       let currentDate = event.date;
-      while (!isAfter(currentDate, end)) {    
-        if(!currentDate || typeof event?.amount != 'number') {
-          throw new Error(`Невалидные данные в getEventsOnNYearsFuture ${event.amount}, ${currentDate}`);
+      while (!isAfter(currentDate, end)) {
+        if (!currentDate || typeof event?.amount != "number") {
+          throw new Error(
+            `Невалидные данные в getEventsOnNYearsFuture ${event.amount}, ${currentDate}`,
+          );
         }
         result.push({
           date: new Date(currentDate).getTime(),
@@ -621,7 +642,7 @@ class BudgetServiceUtils {
           currentDate,
           event.frequency, // тут могут быть все кроме once - это гарантировано тем
           // что невозможно создать расход с частотой once,
-        );        
+        );
       }
     }
     return result;
@@ -726,7 +747,7 @@ class BudgetServiceUtils {
 
       result[freq] = best;
     }
-    console.log("ВЕРНУЛ")
+    console.log("ВЕРНУЛ");
     return result;
   }
 }

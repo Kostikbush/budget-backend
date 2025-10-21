@@ -286,14 +286,17 @@ class BudgetController {
         return res.json({ message: "Недостаточно данных", type: "error" });
       }
 
-      const result = await expenseHistoryService.updateExpenseHistory(userId,
-        { amount, _id: id, isConfirmed: true }
-      );
+      const result = await expenseHistoryService.updateExpenseHistory(userId, {
+        amount,
+        _id: id,
+        isConfirmed: true,
+      });
 
       return res.json(result);
     } catch (error) {
       return res.json({
-        message: error?.message ?? "Ошибка подтверждения элемента истории расходов",
+        message:
+          error?.message ?? "Ошибка подтверждения элемента истории расходов",
         type: "error",
       });
     }
@@ -308,15 +311,17 @@ class BudgetController {
         return res.json({ message: "Недостаточно данных", type: "error" });
       }
 
-      const result = await incomeHistoryService.updateIncomeHistory(
-        userId,
-        { amount, _id: id, isConfirmed: true }
-      );
+      const result = await incomeHistoryService.updateIncomeHistory(userId, {
+        amount,
+        _id: id,
+        isConfirmed: true,
+      });
 
       return res.json(result);
     } catch (error) {
       return res.json({
-        message: error?.message ?? "Ошибка подтверждения элемента истории доходов",
+        message:
+          error?.message ?? "Ошибка подтверждения элемента истории доходов",
         type: "error",
       });
     }
@@ -329,14 +334,15 @@ class BudgetController {
         return res.json({ message: "Недостаточно данных", type: "error" });
       }
 
-      const result = await incomeHistoryService.confirmAllIncomeHistoryItems(
-        userId
-      );
+      const result =
+        await incomeHistoryService.confirmAllIncomeHistoryItems(userId);
 
       return res.json(result);
     } catch (error) {
       return res.json({
-        message: error?.message ?? "Ошибка подтверждения всех элементов истории доходов",
+        message:
+          error?.message ??
+          "Ошибка подтверждения всех элементов истории доходов",
         type: "error",
       });
     }
@@ -349,14 +355,15 @@ class BudgetController {
         return res.json({ message: "Недостаточно данных", type: "error" });
       }
 
-      const result = await expenseHistoryService.confirmAllExpenseHistoryItems(
-        userId
-      );
+      const result =
+        await expenseHistoryService.confirmAllExpenseHistoryItems(userId);
 
       return res.json(result);
     } catch (error) {
       return res.json({
-        message: error?.message ?? "Ошибка подтверждения всех элементов истории расходов",
+        message:
+          error?.message ??
+          "Ошибка подтверждения всех элементов истории расходов",
         type: "error",
       });
     }

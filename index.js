@@ -17,12 +17,12 @@ async function ensureReady() {
         throw err;
       });
 
-        await ExpenseHistoryModel.updateMany({}, [
-        { $set: { isConfirmed: { $ifNull: ["$isConfirmed", false] } } }
-        ]);
-        await IncomeHistoryModel.updateMany({}, [
-        { $set: { isConfirmed: { $ifNull: ["$isConfirmed", false] } } }
-        ]);
+    await ExpenseHistoryModel.updateMany({}, [
+      { $set: { isConfirmed: { $ifNull: ["$isConfirmed", false] } } },
+    ]);
+    await IncomeHistoryModel.updateMany({}, [
+      { $set: { isConfirmed: { $ifNull: ["$isConfirmed", false] } } },
+    ]);
   }
   return conn;
 }

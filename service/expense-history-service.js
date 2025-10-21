@@ -48,7 +48,7 @@ class ExpenseHistoryService {
         scope,
         type,
         category,
-        isConfirmed: frequency === 'once' ? true : isConfirmed,
+        isConfirmed: frequency === "once" ? true : isConfirmed,
       });
 
       budget.sum -= amount;

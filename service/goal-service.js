@@ -23,10 +23,13 @@ class GoalService {
       ).budget?._id?.toString();
     }
 
-    const goals = (await GoalModel.find({
-      budgetId: budgetIdFormat,
-      isCompleted: false,
-    }).sort({ dayOfMoneyWriteOff: 1 }).lean()) ?? [];
+    const goals =
+      (await GoalModel.find({
+        budgetId: budgetIdFormat,
+        isCompleted: false,
+      })
+        .sort({ dayOfMoneyWriteOff: 1 })
+        .lean()) ?? [];
 
     return {
       goals: widthStandardField
@@ -272,11 +275,10 @@ class GoalService {
           userId,
         );
 
-        updatedGoal.dayOfMoneyWriteOff =
-          getNextDateFromFrequency(
-            updatedGoal.dayOfMoneyWriteOff,
-            updatedGoal.frequency,
-          );
+        updatedGoal.dayOfMoneyWriteOff = getNextDateFromFrequency(
+          updatedGoal.dayOfMoneyWriteOff,
+          updatedGoal.frequency,
+        );
 
         await updatedGoal.save();
 
@@ -296,11 +298,10 @@ class GoalService {
         userId,
       );
 
-      updatedGoal.dayOfMoneyWriteOff =
-        getNextDateFromFrequency(
-          updatedGoal.dayOfMoneyWriteOff,
-          updatedGoal.frequency,
-        );
+      updatedGoal.dayOfMoneyWriteOff = getNextDateFromFrequency(
+        updatedGoal.dayOfMoneyWriteOff,
+        updatedGoal.frequency,
+      );
 
       await updatedGoal.save();
     }

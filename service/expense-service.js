@@ -41,7 +41,9 @@ class ExpenseService {
 
     const expenses = await ExpenseModel.find({
       budgetId: budgetIdFormat,
-    }).sort({ date: 1 }).lean();
+    })
+      .sort({ date: 1 })
+      .lean();
 
     return { expenses, type: "success" };
   }
@@ -149,10 +151,7 @@ class ExpenseService {
         userId,
       );
 
-      expense.date = getNextDateFromFrequency(
-        date,
-        frequency,
-      );
+      expense.date = getNextDateFromFrequency(date, frequency);
 
       await expense.save();
     }

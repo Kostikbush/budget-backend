@@ -49,7 +49,7 @@ class IncomeHistoryService {
         incomeId: incomeId,
         frequency: frequency,
         title: title,
-        isConfirmed: frequency === 'once' ? true : isConfirmed,
+        isConfirmed: frequency === "once" ? true : isConfirmed,
       });
 
       budget.sum += amount;
@@ -165,10 +165,10 @@ class IncomeHistoryService {
 
   async confirmAllIncomeHistoryItems(userId) {
     const budget = (await budgetService.getUserBudget(userId)).budget;
-    
+
     await IncomeHistoryModel.updateMany(
-          { budgetId: budget._id, isConfirmed: false },
-          { $set: { isConfirmed: true } },
+      { budgetId: budget._id, isConfirmed: false },
+      { $set: { isConfirmed: true } },
     );
 
     return { type: "success" };

@@ -19,7 +19,7 @@ class UserController {
   async deleteUser(req, res) {
     try {
       const userId = req.user?.sub;
-      
+
       if (!userId) {
         return res
           .status(401)
@@ -29,9 +29,11 @@ class UserController {
       const response = await userService.deleteUser(userId);
       res.json(response);
     } catch (error) {
-      res.json({ message: error?.message ?? "Ошибка удаления пользователя", type: "error" });
+      res.json({
+        message: error?.message ?? "Ошибка удаления пользователя",
+        type: "error",
+      });
     }
-    
   }
 
   async getUser(req, res) {
